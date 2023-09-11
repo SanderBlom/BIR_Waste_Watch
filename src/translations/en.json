@@ -1,0 +1,18 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "BIR Waste Watch configuration",
+          "description": "Please enter your personal bir.no url. See docs for more details"
+        }
+      },
+      "error": {
+        "invalid_url_domain": "Invalid domain in URL",
+        "missing_parameters": "Missing parameters in URL"
+      },
+      "abort": {
+        "already_configured": "Device is already configured"
+      }
+    }
+  }
+  
