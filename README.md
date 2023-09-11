@@ -2,32 +2,32 @@
 
 This Home Assistant extension dynamically generates sensors for waste collection schedules based on your address. It scrapes the BIR.no website to find the appropriate dates for waste pickup and creates sensors accordingly.
 
-## Features
+## 🌟 Features
 
-- Dynamically creates sensors based on the available waste types (e.g., Mixed Waste, Paper & Plastic or Food Waste) for your address.
-- Easy setup through Home Assistant's UI.
+- 📍 Dynamically creates sensors based on the available waste types (e.g., Mixed Waste, Paper & Plastic or Food Waste) for your address.
+- 🎛 Easy setup through Home Assistant's UI.
 
-## Prerequisites
+## 📝 Prerequisites
 
 - Home Assistant instance up and running.
-- Address listed in BIR.no's database.
+- Your garbage is picked up by BIR and your address is listed in BIR.no's database.
 
-## Installation
+## 📦 Installation
 
 1. **Clone this repository or download the source code.**
    
     ```bash
-    git clone https://github.com/yourusername/bir_garbage_schedule.git
+    git clone https://github.com/SanderBlom/BIR_Waste_Watch
     ```
 
     *Or download the ZIP file and extract it.*
 
 2. **Copy the contents of the `src` folder.**
 
-    Copy all the files inside the `src` folder to a new folder named `bir_garbage_schedule` under your Home Assistant's `/config/custom_components/`.
+    Copy all the files inside the `src` folder to a new folder named `BIR_Waste_Watch` (the name has to match exactly as described) under your Home Assistant's `/config/custom_components/`.
 
-    ```
-    /config/custom_components/bir_garbage_schedule/
+    ```bash
+    cp -r src/ /config/custom_components/BIR_Waste_Watch/
     ```
 
 3. **Restart Home Assistant**
@@ -42,14 +42,15 @@ This Home Assistant extension dynamically generates sensors for waste collection
     - Click **Add Integration**.
     - Search for **BIR Garbage Schedule** and click to add.
 
-### Setup
+5. **Configuration**
 
 During the setup phase, you'll need to provide a URL from BIR.no:
 
 1. Go to [BIR.no](https://bir.no/).
 2. Enter your address in the search field.
-3. Once you can see the dates, copy the URL from the address bar.
+3. Once you can see the dates, copy the URL from the address bar(should looks something simelar to this: `https://bir.no/adressesoek/?rId=c2435f0f-2e4b-4908-86cf-bafbd3a2cf61&name=Lillehatten%20330,%20Bergen`).
 4. Paste this URL into the setup phase of the integration in Home Assistant's UI.
+5. You can also specify a custom update schedule for when the integration should query bir.no for new dates. 
 
 ## Tips: Changing Dates to 'Days Until Pickup'
 
