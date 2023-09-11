@@ -10,6 +10,11 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             url = user_input.get("url")
             parsed_url = urlparse(url)
             
+            update_interval = user_input.get("update_interval", 0)
+            
+            if int(update_interval) < 8:
+                errors["update_interval"] = "min_value_8_hours"
+            
             # Check if the URL is from bir.no
             if parsed_url.netloc != "bir.no":
                 errors["base"] = "invalid_url_domain"
@@ -22,18 +27,17 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             if not errors:
                 return self.async_create_entry(
                     title="Waste Collection Sensor",
-                    data={"url": url},
+                    data={"url": url, "update_interval": user_input["update_interval"]},
                 )
         
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required("url", default="https://bir.no/adressesoek/?rId=a9f70280-dd6b-4869-9121-2f192c8fe907&name=Kringsj%C3%A5veien%2048,%20Bergen"): str,
+                    vol.Required("url", default="https://bir.no/adressesoek/yourCustomUUIDandAddress"): str,
+                    vol.Required("update_interval", default=8): vol.All(vol.Coerce(int)),
                 }
             ),
-            errors=errors,
-            description_placeholders={
-                "url_description": "Enter the URL for the bir.no address search."
-            }
+            errors=errors
+
         )

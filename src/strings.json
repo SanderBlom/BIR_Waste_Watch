@@ -1,20 +1,18 @@
 {
-  "title": "Test fff",
-    "config": {
-      "step": {
-        "user": {
-          "data": {
-            "url": "Enter the URL for the bir.no address search."
-          }
-        },
-        "error": {
-          "invalid_url_domain": "The URL must be from bir.no.",
-          "missing_parameters": "The URL must contain rId and name parameters."
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "url": "Personal bir.no URL"
         }
-      },
-      "abort": {
-        "single_instance_allowed": "Setup was aborted because you can only configure a single bir.no instance."
       }
+    },
+    "error": {
+      "invalid_url_domain": "Invalid domain in URL",
+      "missing_parameters": "Missing parameters in URL"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
     }
   }
-  
+}

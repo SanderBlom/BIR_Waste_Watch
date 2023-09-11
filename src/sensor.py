@@ -57,10 +57,9 @@ def parseToDate(date_day, date_month):
     except Exception as e:
         return None, str(e)
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(hours=1)
-
 async def async_setup_entry(hass, config_entry, async_add_entities):
     url = config_entry.data.get("url")
+    update_interval = config_entry.data.get("update_interval", 8)  # Default to 8 if not found
     session = aiohttp.ClientSession()
 
     data = await get_dates(session, url)
@@ -68,18 +67,19 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     if data:
         sensors = []
         for waste_type, date in data.items():
-            sensors.append(WasteCollectionSensor(session, url, waste_type, date, config_entry.entry_id))
+            sensors.append(WasteCollectionSensor(session, url, waste_type, date, config_entry.entry_id, update_interval))
         
         if sensors:
             async_add_entities(sensors, True)
 
 class WasteCollectionSensor(SensorEntity):
-    def __init__(self, session, url, waste_type, state, entry_id):
+    def __init__(self, session, url, waste_type, state, entry_id, update_interval):
         self._session = session
         self._url = url
         self._waste_type = waste_type
         self._state = state
         self._entry_id = entry_id
+        self._throttle_time = timedelta(hours=int(update_interval))  # Convert user input to timedelta
 
     @property
     def entity_registry_enabled_default(self) -> bool:
@@ -97,7 +97,7 @@ class WasteCollectionSensor(SensorEntity):
     def state(self):
         return self._state
 
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
+    @Throttle(lambda self: self._throttle_time)  # Using lambda to fetch dynamically
     async def async_update(self):
         data = await get_dates(self._session, self._url)
         if data:
