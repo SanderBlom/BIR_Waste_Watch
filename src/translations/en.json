@@ -3,7 +3,7 @@
       "step": {
         "user": {
           "title": "BIR Waste Watch configuration",
-          "description": "Please enter the bir.no url & the amount between updates in hours (minimum 8 hours). See docs for more details."
+          "description": "Please enter the bir.no url & the amount between updates in hours (minimum 1 hour). See docs for more details."
         }
       },
       "error": {

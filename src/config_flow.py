@@ -12,8 +12,8 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             
             update_interval = user_input.get("update_interval", 0)
             
-            if int(update_interval) < 8:
-                errors["update_interval"] = "min_value_8_hours"
+            if int(update_interval) < 1:
+                errors["update_interval"] = "min_value_1_hours"
             
             # Check if the URL is from bir.no
             if parsed_url.netloc != "bir.no":
@@ -35,7 +35,7 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             data_schema=vol.Schema(
                 {
                     vol.Required("url", default="https://bir.no/adressesoek/yourCustomUUIDandAddress"): str,
-                    vol.Required("update_interval", default=8): vol.All(vol.Coerce(int)),
+                    vol.Required("update_interval", default=4): vol.All(vol.Coerce(int)),
                 }
             ),
             errors=errors
