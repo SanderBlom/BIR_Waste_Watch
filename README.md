@@ -67,7 +67,7 @@ sensor:
         friendly_name: "Days Until Mixed Waste"
         value_template: >-
           {% set pick_up_date = as_timestamp(states('sensor.mixed_waste')) %}
-          {% set current_date = as_timestamp(now()) %}
+          {% set current_date = as_timestamp(now().strftime('%Y-%m-%d')) %}
           {% set days_remaining = ((pick_up_date - current_date) / 86400) | int %}
           {% if days_remaining >= 0 %}
             {{ days_remaining }}
@@ -78,12 +78,13 @@ sensor:
         friendly_name: "Days Until Paper & Plastic Waste"
         value_template: >-
           {% set pick_up_date = as_timestamp(states('sensor.paper_and_plastic_waste')) %}
-          {% set current_date = as_timestamp(now()) %}
+          {% set current_date = as_timestamp(now().strftime('%Y-%m-%d')) %}
           {% set days_remaining = ((pick_up_date - current_date) / 86400) | int %}
           {% if days_remaining >= 0 %}
             {{ days_remaining }}
           {% else %}
             unknown
           {% endif %}
+
 
 ```
