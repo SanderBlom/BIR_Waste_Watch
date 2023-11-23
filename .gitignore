@@ -1,2 +1,5 @@
 __pycache__/
 .vscode/
+.dev/*
+
+dev/ha_config/configuration.yaml

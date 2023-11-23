@@ -5,11 +5,17 @@ from homeassistant.helpers.event import async_track_time_interval
 import logging
 from .get_data import get_dates 
 _LOGGER = logging.getLogger(__name__)
+SCAN_INTERVAL = timedelta(hours=1)
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     url = config_entry.data.get("url")
-    update_interval = config_entry.data.get("update_interval", 4)
     session = aiohttp.ClientSession()
+
+    # Register a callback to close the session on Home Assistant's shutdown
+    async def close_session(event):
+        await session.close()
+
+    hass.bus.async_listen_once("homeassistant_stop", close_session)
 
     data = await get_dates(session, url)
     
@@ -20,16 +26,17 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for waste_type, date in data.items():
             sensor = WasteCollectionSensor(session, url, waste_type, date, config_entry.entry_id)
             sensors.append(sensor)
-            
-            async_track_time_interval(hass, sensor.async_update, timedelta(hours=int(update_interval)))
-        
+
+            # Update the sensor on the first run
+            await sensor.async_update()
         _LOGGER.debug(f"Sensors to add: {sensors}")  # Debug log to check sensors
 
         if sensors:
-            async_add_entities(sensors, True)
+            async_add_entities(sensors, True)                
 
 
 class WasteCollectionSensor(SensorEntity):
+    SCAN_INTERVAL = timedelta(hours=4)
     def __init__(self, session, url, waste_type, state, entry_id):
         self._session = session
         self._url = url
@@ -58,10 +65,11 @@ class WasteCollectionSensor(SensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         return {
-            'Last': self._last_updated
+            'Last updated': self._last_updated
         }
 
     async def async_update(self, *_):
+        _LOGGER.debug(f"Updated sensor data from async_update function")
         data = await get_dates(self._session, self._url)
         if data:
             self._state = data.get(self._waste_type, "N/A")

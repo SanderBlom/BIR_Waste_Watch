@@ -10,11 +10,6 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             url = user_input.get("url")
             parsed_url = urlparse(url)
             
-            update_interval = user_input.get("update_interval", 0)
-            
-            if int(update_interval) < 1:
-                errors["update_interval"] = "min_value_1_hours"
-            
             # Check if the URL is from bir.no
             if parsed_url.netloc != "bir.no":
                 errors["base"] = "invalid_url_domain"
@@ -27,7 +22,7 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             if not errors:
                 return self.async_create_entry(
                     title="Waste Collection Sensor",
-                    data={"url": url, "update_interval": user_input["update_interval"]},
+                    data={"url": url},
                 )
         
         return self.async_show_form(
@@ -35,7 +30,6 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             data_schema=vol.Schema(
                 {
                     vol.Required("url", default="https://bir.no/adressesoek/yourCustomUUIDandAddress"): str,
-                    vol.Required("update_interval", default=4): vol.All(vol.Coerce(int)),
                 }
             ),
             errors=errors
