@@ -1,0 +1,32 @@
+name: Release ZIP
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      actions: write
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Prepare Files
+      run: |
+        mkdir bir
+        cp -r custom_components/* bir/
+
+    - name: Zip Files
+      run: zip -r bir-${{ github.ref_name }}.zip bir
+
+    - name: Upload ZIP to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bir-${{ github.ref_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

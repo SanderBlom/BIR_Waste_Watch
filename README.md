@@ -1,5 +1,6 @@
-# BIR Garbage Schedule for Home Assistant
-
+# BIR Waste Watch for Home Assistant
+:warning: This is not an official integration from BIR!
+![](/assets/logo.png)
 This Home Assistant extension dynamically generates sensors for waste collection schedules based on your address. It scrapes the BIR.no website to find the appropriate dates for waste pickup and creates sensors accordingly.
 
 ## 🌟 Features
@@ -14,20 +15,12 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 📦 Installation
 
-1. **Clone this repository or download the source code.**
-   
-    ```bash
-    git clone https://github.com/SanderBlom/BIR_Waste_Watch
-    ```
+1. **Download the latest release [here](https://github.com/SanderBlom/BIR_Waste_Watch/releases).**
 
-    *Or download the ZIP file and extract it.*
-
-2. **Copy the contents of the `src` folder.**
-
-    Copy all the files inside the `src` folder to a new folder named `BIR_Waste_Watch` (the name has to match exactly as described) under your Home Assistant's `/config/custom_components/`.
+2. **Extract the zip and copy the files to the custom_components folder.**
 
     ```bash
-    cp -r src/ /config/custom_components/BIR_Waste_Watch/
+    cp -r bir/ /config/custom_components/
     ```
 
 3. **Restart Home Assistant**
@@ -44,13 +37,12 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 5. **Configuration**
 
-During the setup phase, you'll need to provide a URL from BIR.no:
+During the setup phase, you'll need to provide a URL from BIR.no
 
 1. Go to [bir.no](https://bir.no/).
 2. Enter your address in the search field.
 3. Once you can see the dates, copy the URL from the address bar(should looks something similar to this: `https://bir.no/adressesoek/?rId=c2435f0f-2e4b-4908-86cf-bafbd3a2cf61&name=Lillehatten%20330,%20Bergen`).
 4. Paste this URL into the setup phase of the integration in Home Assistant's UI.
-5. You can also specify a custom update schedule for when the integration should query bir.no for new dates. 
 
 ## Tips: Changing Dates to 'Days Until Pickup'
 
