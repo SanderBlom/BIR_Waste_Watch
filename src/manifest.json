@@ -2,7 +2,7 @@
   "domain": "BIR_Waste_Watch",
   "name": "BIR Waste Watch",
   "config_flow": true,
-  "version": "0.1",
+  "version": "1.1.0",
   "documentation": "https://github.com/SanderBlom/BIR_Waste_Watch",
   "dependencies": [],
   "codeowners": ["@sanderblom"],
