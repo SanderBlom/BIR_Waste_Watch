@@ -18,8 +18,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     hass.bus.async_listen_once("homeassistant_stop", close_session)
 
     data = await get_dates(session, url)
-    
-    _LOGGER.debug(f"Data retrieved from get_dates function: {data}")  # Debug log to check data
 
     if data:
         sensors = []
@@ -29,7 +27,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
             # Update the sensor on the first run
             await sensor.async_update()
-        _LOGGER.debug(f"Sensors to add: {sensors}")  # Debug log to check sensors
 
         if sensors:
             async_add_entities(sensors, True)                
@@ -69,7 +66,6 @@ class WasteCollectionSensor(SensorEntity):
         }
 
     async def async_update(self, *_):
-        _LOGGER.debug(f"Updated sensor data from async_update function")
         data = await get_dates(self._session, self._url)
         if data:
             self._state = data.get(self._waste_type, "N/A")
