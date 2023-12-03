@@ -37,13 +37,12 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 5. **Configuration**
 
-During the setup phase, you'll need to provide a URL from BIR.no:
+During the setup phase, you'll need to provide a URL from BIR.no
 
 1. Go to [bir.no](https://bir.no/).
 2. Enter your address in the search field.
 3. Once you can see the dates, copy the URL from the address bar(should looks something similar to this: `https://bir.no/adressesoek/?rId=c2435f0f-2e4b-4908-86cf-bafbd3a2cf61&name=Lillehatten%20330,%20Bergen`).
 4. Paste this URL into the setup phase of the integration in Home Assistant's UI.
-5. You can also specify a custom update schedule for when the integration should query bir.no for new dates. 
 
 ## Tips: Changing Dates to 'Days Until Pickup'
 
