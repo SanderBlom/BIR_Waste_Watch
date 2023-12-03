@@ -18,15 +18,15 @@ jobs:
 
     - name: Prepare Files
       run: |
-        mkdir BIR_Waste_Watch
-        cp -r custom_components/* BIR_Waste_Watch/
+        mkdir bir
+        cp -r custom_components/* bir/
 
     - name: Zip Files
-      run: zip -r BIR_Waste_Watch-${{ github.ref_name }}.zip BIR_Waste_Watch
+      run: zip -r bir-${{ github.ref_name }}.zip bir
 
     - name: Upload ZIP to Release
       uses: softprops/action-gh-release@v1
       with:
-        files: BIR_Waste_Watch-${{ github.ref_name }}.zip
+        files: bir-${{ github.ref_name }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
