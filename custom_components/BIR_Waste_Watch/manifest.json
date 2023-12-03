@@ -5,6 +5,7 @@
   "version": "1.1.0",
   "documentation": "https://github.com/SanderBlom/BIR_Waste_Watch",
   "dependencies": [],
+  "issue_tracker": "https://github.com/SanderBlom/BIR_Waste_Watch/issues",
   "codeowners": ["@sanderblom"],
   "requirements": ["beautifulsoup4", "aiohttp"],
   "iot_class": "cloud_polling"
