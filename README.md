@@ -14,20 +14,12 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 📦 Installation
 
-1. **Clone this repository or download the source code.**
-   
-    ```bash
-    git clone https://github.com/SanderBlom/BIR_Waste_Watch
-    ```
+1. **Download the latest release [here](https://github.com/SanderBlom/BIR_Waste_Watch/releases).**
 
-    *Or download the ZIP file and extract it.*
-
-2. **Copy the contents of the `src` folder.**
-
-    Copy all the files inside the `src` folder to a new folder named `BIR_Waste_Watch` (the name has to match exactly as described) under your Home Assistant's `/config/custom_components/`.
+2. **Extract the zip and copy the files to the custom_components folder.**
 
     ```bash
-    cp -r src/ /config/custom_components/BIR_Waste_Watch/
+    cp -r BIR_Waste_Watch/ /config/custom_components/
     ```
 
 3. **Restart Home Assistant**
