@@ -1,5 +1,6 @@
-# BIR Garbage Schedule for Home Assistant
-
+# BIR Waste Watch for Home Assistant
+:warning: This is not an official integration from BIR!
+![](https://kommunikasjon.ntb.no/data/images/00406/e3a935ca-a189-4214-bf3d-cc253d6f52c7.png)
 This Home Assistant extension dynamically generates sensors for waste collection schedules based on your address. It scrapes the BIR.no website to find the appropriate dates for waste pickup and creates sensors accordingly.
 
 ## 🌟 Features
