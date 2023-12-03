@@ -1,0 +1,28 @@
+name: Release ZIP
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Prepare Files
+      run: |
+        mkdir BIR_Waste_Watch
+        cp -r src/* BIR_Waste_Watch/
+
+    - name: Zip Files
+      run: zip -r BIR_Waste_Watch-${{ github.ref_name }}.zip BIR_Waste_Watch
+
+    - name: Upload ZIP to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: BIR_Waste_Watch-${{ github.ref_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
