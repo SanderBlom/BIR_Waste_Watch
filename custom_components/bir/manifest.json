@@ -1,0 +1,12 @@
+{
+  "domain": "bir",
+  "name": "BIR Waste Watch",
+  "codeowners": ["@sanderblom"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/SanderBlom/BIR_Waste_Watch",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/SanderBlom/BIR_Waste_Watch/issues",
+  "requirements": ["beautifulsoup4", "aiohttp"],
+  "version": "1.1.0"
+}
