@@ -1,6 +1,16 @@
+<<<<<<< Updated upstream
+# BIR Garbage Schedule for Home Assistant
+=======
 # BIR Waste Watch for Home Assistant
+
+[![Latest Release](https://badgen.net/github/release/SanderBlom/BIR_Waste_Watch/releases)](https://github.com/SanderBlom/BIR_Waste_Watch/releases)
+[![Validate with hassfest](https://github.com/SanderBlom/BIR_Waste_Watch/actions/workflows/hassfest.yml/badge.svg)](https://github.com/SanderBlom/BIR_Waste_Watch/actions/workflows/hassfest.yml)
+[![HACS Action](https://github.com/SanderBlom/BIR_Waste_Watch/actions/workflows/hacs.yml/badge.svg)](https://github.com/SanderBlom/BIR_Waste_Watch/actions/workflows/hacs.yml)
+
 :warning: This is not an official integration from BIR!
 ![](/assets/logo.png)
+>>>>>>> Stashed changes
+
 This Home Assistant extension dynamically generates sensors for waste collection schedules based on your address. It scrapes the BIR.no website to find the appropriate dates for waste pickup and creates sensors accordingly.
 
 ## 🌟 Features
