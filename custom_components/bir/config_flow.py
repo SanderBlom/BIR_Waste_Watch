@@ -2,7 +2,7 @@ import voluptuous as vol
 from urllib.parse import urlparse, parse_qs
 from homeassistant import config_entries
 
-class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch"):
+class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
     async def async_step_user(self, user_input=None):
         errors = {}
         
