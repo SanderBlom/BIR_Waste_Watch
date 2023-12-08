@@ -29,7 +29,7 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="BIR_Waste_Watch
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required("url", default="https://bir.no/adressesoek/yourCustomUUIDandAddress"): str,
+                    vol.Required("url", default=""): str,
                 }
             ),
             errors=errors
