@@ -1,7 +1,6 @@
 from datetime import timedelta, datetime
 import aiohttp
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.event import async_track_time_interval
 import logging
 from .get_data import get_dates 
 _LOGGER = logging.getLogger(__name__)
@@ -33,7 +32,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class WasteCollectionSensor(SensorEntity):
-    SCAN_INTERVAL = timedelta(hours=4)
     def __init__(self, session, url, waste_type, state, entry_id):
         self._session = session
         self._url = url
@@ -57,6 +55,12 @@ class WasteCollectionSensor(SensorEntity):
     @property
     def state(self):
         return self._state
+    
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        # Example icon: mdi:recycle. Replace with your preferred icon
+        return "mdi:trash-can"
 
     @property
     def extra_state_attributes(self):
