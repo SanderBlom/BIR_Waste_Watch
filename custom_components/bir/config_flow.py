@@ -3,7 +3,6 @@ from urllib.parse import urlparse, parse_qs
 from homeassistant import config_entries
 
 class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
-class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
     async def async_step_user(self, user_input=None):
         errors = {}
         
@@ -23,7 +22,6 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
             if not errors:
                 return self.async_create_entry(
                     title="Waste Collection Sensor",
-                    data={"url": url},
                     data={"url": url},
                 )
         
