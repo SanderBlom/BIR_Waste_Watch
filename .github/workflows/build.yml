@@ -19,7 +19,7 @@ jobs:
     - name: Prepare Files
       run: |
         mkdir bir
-        cp -r custom_components/* bir/
+        cp -r custom_components/bir/* bir/
 
     - name: Zip Files
       run: zip -r bir-${{ github.ref_name }}.zip bir

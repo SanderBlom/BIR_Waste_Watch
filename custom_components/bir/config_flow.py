@@ -3,6 +3,7 @@ from urllib.parse import urlparse, parse_qs
 from homeassistant import config_entries
 
 class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
+class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
     async def async_step_user(self, user_input=None):
         errors = {}
         
@@ -23,13 +24,14 @@ class TrashScheduleConfigFlow(config_entries.ConfigFlow, domain="bir"):
                 return self.async_create_entry(
                     title="Waste Collection Sensor",
                     data={"url": url},
+                    data={"url": url},
                 )
         
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required("url", default="https://bir.no/adressesoek/yourCustomUUIDandAddress"): str,
+                    vol.Required("url", default=""): str,
                 }
             ),
             errors=errors

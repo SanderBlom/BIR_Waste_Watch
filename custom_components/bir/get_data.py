@@ -74,7 +74,15 @@ async def get_dates(session, url):
 
 def parseToDate(date_day, date_month):
     try:
-        date_str = f"{date_day} {date_month} 2023"
+        # Get the current year
+        current_year = datetime.now().year
+
+        # If the current month is December and the pickup month is January,
+        # increment the year by 1
+        if datetime.now().month == 12 and date_month.lower() == 'jan':
+            current_year += 1
+
+        date_str = f"{date_day} {date_month} {current_year}"
         return datetime.strptime(date_str, '%d %b %Y'), None
     except Exception as e:
         _LOGGER.error(f"Exception while parsing date: {str(e)}")

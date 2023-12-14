@@ -1,7 +1,6 @@
 from datetime import timedelta, datetime
 import aiohttp
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.event import async_track_time_interval
 import logging
 from .get_data import get_dates 
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +56,12 @@ class WasteCollectionSensor(SensorEntity):
     @property
     def state(self):
         return self._state
+    
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        # Example icon: mdi:recycle. Replace with your preferred icon
+        return "mdi:trash-can"
 
     @property
     def extra_state_attributes(self):
