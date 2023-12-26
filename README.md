@@ -50,39 +50,3 @@ During the setup phase, you'll need to provide a URL from BIR.no
 3. Once you can see the dates, copy the URL from the address bar(should looks something similar to this: `https://bir.no/adressesoek/?rId=c2435f0f-2e4b-4908-86cf-bafbd3a2cf61&name=Lillehatten%20330,%20Bergen`).
 4. Paste this URL into the setup phase of the integration in Home Assistant's UI.
 
-## Tips: Changing Dates to 'Days Until Pickup'
-
-If you'd like to display the remaining days until the next pickup instead of the dates, you can create a [template sensor](https://www.home-assistant.io/integrations/template/) in Home Assistant.
-
-Here's an example:
-
-```yaml
-# configuration.yaml
-sensor:
-  - platform: template
-    sensors:
-      days_until_mixed_waste:
-        friendly_name: "Days Until Mixed Waste"
-        value_template: >-
-          {% set pick_up_date = as_timestamp(states('sensor.mixed_waste')) %}
-          {% set current_date = as_timestamp(now().strftime('%Y-%m-%d')) %}
-          {% set days_remaining = ((pick_up_date - current_date) / 86400) | int %}
-          {% if days_remaining >= 0 %}
-            {{ days_remaining }}
-          {% else %}
-            unknown
-          {% endif %}
-      days_until_paper_and_plastic_waste:
-        friendly_name: "Days Until Paper & Plastic Waste"
-        value_template: >-
-          {% set pick_up_date = as_timestamp(states('sensor.paper_and_plastic_waste')) %}
-          {% set current_date = as_timestamp(now().strftime('%Y-%m-%d')) %}
-          {% set days_remaining = ((pick_up_date - current_date) / 86400) | int %}
-          {% if days_remaining >= 0 %}
-            {{ days_remaining }}
-          {% else %}
-            unknown
-          {% endif %}
-
-
-```
