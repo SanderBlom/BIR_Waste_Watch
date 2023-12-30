@@ -129,4 +129,14 @@ class WasteCollectionSensorDays(WasteCollectionSensorBase):
         """Calculate the days until the next waste collection."""
         today = datetime.now().date()
         pickup_date_obj = datetime.strptime(self._date, "%Y-%m-%d").date()
-        return (pickup_date_obj - today).days
+        delta = (pickup_date_obj - today).days
+        return max(delta, 0)  # Prevent negative values
+
+    async def async_update(self) -> None:
+        """Update the sensor state (days until pickup)."""
+        data = await get_dates(self._session, self._url)
+        if data and self._waste_type in data:
+            new_date = data[self._waste_type]
+            if new_date != self._date:
+                self._date = new_date
+
