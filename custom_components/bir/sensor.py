@@ -30,10 +30,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     # Register for Home Assistant stop event to close the session
     hass.bus.async_listen_once("homeassistant_stop", close_session)
 
-    # Obtain the token
     token = await login(session, _LOGGER)
 
-    # Get pickup data
     data = await get_pickup_dates(session, url, token, _LOGGER)
 
     if data:
