@@ -85,6 +85,13 @@ async def get_pickup_dates(session: aiohttp.ClientSession, url: str, token: str,
         "Papir": None,
         "Matavfall": None
     }
+
+    name_map = {
+        "Restavfall": "Mixed Waste",
+        "Papir": "Paper And Plastic",
+        "Matavfall": "Food Waste"
+    }
+
     logger.debug("Response from BIR API: %s", pickup_data)
 
     for item in pickup_data:
@@ -98,8 +105,9 @@ async def get_pickup_dates(session: aiohttp.ClientSession, url: str, token: str,
             if next_pickups[fraksjon] is None or pickup_date < datetime.strptime(next_pickups[fraksjon]["dato"], '%Y-%m-%dT%H:%M:%S'):
                 next_pickups[fraksjon] = {
                     "dato": item["dato"],
-                    "type": item["fraksjon"],
+                    "type": name_map[fraksjon],  # Map to English name
                     "days_until": days_until
                 }
 
-    return {k: v for k, v in next_pickups.items() if v is not None}
+    # Return only pickups that are not None, with English names
+    return {name_map[k]: v for k, v in next_pickups.items() if v is not None}
