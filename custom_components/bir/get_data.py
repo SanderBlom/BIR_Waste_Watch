@@ -92,23 +92,26 @@ async def get_pickup_dates(session: aiohttp.ClientSession, url: str, token: str,
         "Papir": "Paper And Plastic",
         "Matavfall": "Food Waste"
     }
+    today = datetime.today().date()
 
     logger.debug("Response from BIR API: %s", pickup_data)
 
     for item in pickup_data:
         fraksjon = item["fraksjon"]
         if fraksjon in next_pickups:
-            pickup_date = datetime.strptime(item["dato"], '%Y-%m-%dT%H:%M:%S')
+            # Convert pickup_date to a date without time
+            pickup_date = datetime.strptime(item["dato"], '%Y-%m-%dT%H:%M:%S').date()
             days_until = (pickup_date - today).days
             if days_until < 0:
                 days_until = 0
             # Check if we have no date yet or if the current date is earlier
-            if next_pickups[fraksjon] is None or pickup_date < datetime.strptime(next_pickups[fraksjon]["dato"], '%Y-%m-%dT%H:%M:%S'):
+            if next_pickups[fraksjon] is None or pickup_date < datetime.strptime(next_pickups[fraksjon]["dato"], '%Y-%m-%dT%H:%M:%S').date():
                 next_pickups[fraksjon] = {
                     "dato": item["dato"],
-                    "type": name_map[fraksjon],  # Map to English name
+                    "type": name_map[fraksjon],
                     "days_until": days_until
                 }
 
     # Return only pickups that are not None, with English names
     return {name_map[k]: v for k, v in next_pickups.items() if v is not None}
+
