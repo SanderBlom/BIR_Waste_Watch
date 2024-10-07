@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
-import aiohttp
 from homeassistant.components.sensor import SensorEntity
 import logging
-from .get_data import get_dates
+from .get_data import get_pickup_dates, login
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from typing import Any, Dict, List, Optional
+import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ NA_STRING = "N/A"
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: Any) -> None:
     """Set up the sensor platform.
-    
+
     Args:
         hass: HomeAssistant instance.
         config_entry: Configuration entry for this sensor.
@@ -27,15 +27,20 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         """Close the aiohttp session on Home Assistant stop event."""
         await session.close()
 
+    # Register for Home Assistant stop event to close the session
     hass.bus.async_listen_once("homeassistant_stop", close_session)
 
-    data = await get_dates(session, url)
+    # Obtain the token
+    token = await login(session, _LOGGER)
+
+    # Get pickup data
+    data = await get_pickup_dates(session, url, token, _LOGGER)
 
     if data:
         sensors: List[SensorEntity] = []
-        for waste_type, date in data.items():
-            collection_sensor = WasteCollectionSensorDates(session, url, waste_type, date, config_entry.entry_id)
-            days_until_sensor = WasteCollectionSensorDays(session, url, waste_type, date, config_entry.entry_id)
+        for waste_type, waste_info in data.items():
+            collection_sensor = WasteCollectionSensorDates(session, url, waste_type, waste_info['dato'], config_entry.entry_id)
+            days_until_sensor = WasteCollectionSensorDays(session, url, waste_type, waste_info['days_until'], config_entry.entry_id)
             sensors.extend([collection_sensor, days_until_sensor])
 
             await collection_sensor.async_update()
@@ -46,7 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 
 class WasteCollectionSensorBase(SensorEntity):
     """Base sensor for waste collection."""
-    
+
     def __init__(self, session: aiohttp.ClientSession, url: str, waste_type: str, entry_id: str) -> None:
         self._session = session
         self._url = url
@@ -71,7 +76,8 @@ class WasteCollectionSensorBase(SensorEntity):
 
     async def async_update(self) -> None:
         """Update the sensor state."""
-        data = await get_dates(self._session, self._url)
+        token = await login(self._session, _LOGGER)  # Use cached token
+        data = await get_pickup_dates(self._session, self._url, token, _LOGGER)
         if data:
             self._last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -100,15 +106,19 @@ class WasteCollectionSensorDates(WasteCollectionSensorBase):
 
     async def async_update(self) -> None:
         """Update the sensor state (pickup date)."""
-        data = await get_dates(self._session, self._url)
-        self._state = data.get(self._waste_type, NA_STRING) if data else NA_STRING
+        token = await login(self._session, _LOGGER)  # Use cached token
+        data = await get_pickup_dates(self._session, self._url, token, _LOGGER)
+        if data and self._waste_type in data:
+            self._state = data[self._waste_type]['dato']
+        else:
+            self._state = NA_STRING
 
 class WasteCollectionSensorDays(WasteCollectionSensorBase):
     """Sensor for showing days until the next waste collection."""
 
-    def __init__(self, session: aiohttp.ClientSession, url: str, waste_type: str, date: str, entry_id: str) -> None:
+    def __init__(self, session: aiohttp.ClientSession, url: str, waste_type: str, days_until: int, entry_id: str) -> None:
         super().__init__(session, url, waste_type, entry_id)
-        self._date = date
+        self._days_until = days_until
 
     @property
     def unique_id(self) -> str:
@@ -123,20 +133,11 @@ class WasteCollectionSensorDays(WasteCollectionSensorBase):
     @property
     def state(self) -> int:
         """Return the state of the sensor."""
-        return self._calculate_days_until_pickup()
-
-    def _calculate_days_until_pickup(self) -> int:
-        """Calculate the days until the next waste collection."""
-        today = datetime.now().date()
-        pickup_date_obj = datetime.strptime(self._date, "%Y-%m-%d").date()
-        delta = (pickup_date_obj - today).days
-        return max(delta, 0)  # Prevent negative values
+        return self._days_until
 
     async def async_update(self) -> None:
         """Update the sensor state (days until pickup)."""
-        data = await get_dates(self._session, self._url)
+        token = await login(self._session, _LOGGER)  # Use cached token
+        data = await get_pickup_dates(self._session, self._url, token, _LOGGER)
         if data and self._waste_type in data:
-            new_date = data[self._waste_type]
-            if new_date != self._date:
-                self._date = new_date
-
+            self._days_until = data[self._waste_type]['days_until']
