@@ -9,6 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def login(session: aiohttp.ClientSession, force_refresh=False):
     """Login and retrieve a token, with an option to force refresh."""
+    _LOGGER.debug("Trying to get a new token")
     global _cached_token
     if _cached_token and not force_refresh:
         return _cached_token
