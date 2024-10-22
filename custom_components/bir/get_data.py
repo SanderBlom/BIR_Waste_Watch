@@ -1,89 +1,117 @@
+import aiohttp
+from datetime import datetime, timedelta
+import re
 import logging
-from datetime import datetime
-from bs4 import BeautifulSoup
 
+# Global variable to store the token
+_cached_token = None
 _LOGGER = logging.getLogger(__name__)
 
-MONTH_MAP = {
-    "jan": "Jan",
-    "feb": "Feb",
-    "mar": "Mar",
-    "apr": "Apr",
-    "mai": "May",
-    "jun": "Jun",
-    "jul": "Jul",
-    "aug": "Aug",
-    "sep": "Sep",
-    "okt": "Oct",
-    "nov": "Nov",
-    "des": "Dec",
-}
+async def login(session: aiohttp.ClientSession, force_refresh=False):
+    """Login and retrieve a token, with an option to force refresh."""
+    _LOGGER.debug("Trying to get a new token")
+    global _cached_token
+    if _cached_token and not force_refresh:
+        return _cached_token
 
-async def get_dates(session, url):
-    _LOGGER.debug(f"Attempting to fetch data from URL: {url}")
-    
-    async with session.get(url) as response:
-        if response.status != 200:
-            _LOGGER.error(f"Failed to get content from URL: {url}. HTTP Status Code: {response.status}")
-            return "Failed to get content"
+    url = "https://webservice.bir.no/api/login"
+    payload = {
+        "applikasjonsId": "94FA72AD-583D-4AA3-988F-491F694DFB7B",
+        "oppdragsgiverId": "100;300;400"
+    }
 
-        html = await response.text()
-        soup = BeautifulSoup(html, 'html.parser')
-
-        data = {}
-        target_items = soup.select('.address-page-box__list__item')
-        
-        _LOGGER.debug(f"Found {len(target_items)} target items.")
-
-        for item in target_items:
-            text_content_elem = item.select_one('.text-content__inner')
-            date_month_elem = item.select_one('.date__month')
-
-            if text_content_elem and date_month_elem:
-                text_content = text_content_elem.get_text(strip=True)
-                date_month = date_month_elem.get_text(strip=True)
-
-                date_parts = date_month.split(". ")
-                if len(date_parts) < 2:
-                    _LOGGER.warning("Could not split date into day and month")
-                    continue
-
-                date_day = date_parts[0].strip()
-                date_month = date_parts[1].strip()
-                
-                # Translate month to English abbreviation
-                date_month = MONTH_MAP.get(date_month.lower(), date_month)
-
-                date, err = parseToDate(date_day, date_month)
-                if err:
-                    _LOGGER.error(f"Failed to parse date. Error: {err}")
-                    continue
-
-                formatted_date = date.strftime("%Y-%m-%d")
-
-                if "Restavfall" in text_content:
-                    data['mixed_waste'] = formatted_date
-                elif "Papir og plastemballasje" in text_content:
-                    data['paper_and_plastic_waste'] = formatted_date
-                elif "Matavfall" in text_content:
-                    data['food_waste'] = formatted_date
-
-        _LOGGER.debug(f"Collected data: {data}")
-
-        return data
-
-def parseToDate(date_day, date_month):
     try:
-        # Get the current year
-        current_year = datetime.now().year
+        async with session.post(url, json=payload) as response:
+            response.raise_for_status()  # Raise an error for bad responses
+            token = response.headers.get("Token")
+            if not token:
+                raise Exception("Login failed: Token not found in response headers")
+            _cached_token = token
+            return token
+    except aiohttp.ClientResponseError as e:
+        _LOGGER.error(f"Login failed: {e}")
+        raise
+    except aiohttp.ClientError as e:
+        _LOGGER.error(f"An error occurred during login: {e}")
+        raise
 
-        # If the current month is December and the pickup month is January,
-        # increment the year by 1
-        if datetime.now().month == 12 and date_month.lower() == 'jan':
-            current_year += 1
+async def get_pickup_dates(session: aiohttp.ClientSession, url: str, token: str, logger: logging.Logger):
+    """Fetch the pickup dates using the provided token."""
+    if token is None:
+        logger.debug("Token is none. Check that login was successful.")
+        token = await login(session)
 
-        date_str = f"{date_day} {date_month} {current_year}"
-        return datetime.strptime(date_str, '%d %b %Y'), None
-    except Exception as e:
-        _LOGGER.error(f"Exception while parsing date: {str(e)}")
-        return None, str(e)
+    pattern = r'[?&]rId=([^&]+)'
+    match = re.search(pattern, url)
+    logger.debug("The URL is: %s", url)
+
+    if match:
+        eiendom_id = match.group(1)
+    else:
+        raise Exception("Failed to extract eiendomId from URL")
+
+    base_url = "https://webservice.bir.no/api/tomminger"
+    today = datetime.now()
+    today_str = today.strftime('%Y-%m-%d')
+    end_date = (today + timedelta(days=31)).strftime('%Y-%m-%d')
+    params = {
+        "eiendomId": eiendom_id,
+        "datoFra": today_str,
+        "datoTil": end_date
+    }
+    headers = {
+        "Token": token
+    }
+
+    try:
+        async with session.get(base_url, headers=headers, params=params) as response:
+            response.raise_for_status()
+            pickup_data = await response.json()
+    except aiohttp.ClientResponseError as e:
+        if e.status == 401:  # Unauthorized, try logging in again
+            logger.debug("Token expired. Logging in again.")
+            global _cached_token
+            _cached_token = None
+            token = await login(session, force_refresh=True)
+            headers["Token"] = token
+            async with session.get(base_url, headers=headers, params=params) as response:
+                response.raise_for_status()
+                pickup_data = await response.json()
+        else:
+            raise Exception("Failed to fetch pickup dates") from e
+
+    # Initialize next pickup tracking
+    next_pickups = {
+        "Restavfall": None,
+        "Papir": None,
+        "Matavfall": None
+    }
+
+    name_map = {
+        "Restavfall": "Mixed Waste",
+        "Papir": "Paper And Plastic",
+        "Matavfall": "Food Waste"
+    }
+    today = datetime.today().date()
+
+    logger.debug("Response from BIR API: %s", pickup_data)
+
+    for item in pickup_data:
+        fraksjon = item["fraksjon"]
+        if fraksjon in next_pickups:
+            # Convert pickup_date to a date without time
+            pickup_date = datetime.strptime(item["dato"], '%Y-%m-%dT%H:%M:%S').date()
+            days_until = (pickup_date - today).days
+            if days_until < 0:
+                days_until = 0
+            # Check if we have no date yet or if the current date is earlier
+            if next_pickups[fraksjon] is None or pickup_date < datetime.strptime(next_pickups[fraksjon]["dato"], '%Y-%m-%dT%H:%M:%S').date():
+                next_pickups[fraksjon] = {
+                    "dato": item["dato"],
+                    "type": name_map[fraksjon],
+                    "days_until": days_until
+                }
+
+    # Return only pickups that are not None, with English names
+    return {name_map[k]: v for k, v in next_pickups.items() if v is not None}
+
