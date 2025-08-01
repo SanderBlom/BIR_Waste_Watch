@@ -84,13 +84,15 @@ async def get_pickup_dates(session: aiohttp.ClientSession, url: str, token: str,
     next_pickups = {
         "Restavfall": None,
         "Papir": None,
-        "Matavfall": None
+        "Matavfall": None,
+        "Glass og metallemballasje": None
     }
 
     name_map = {
         "Restavfall": "Mixed Waste",
         "Papir": "Paper And Plastic",
-        "Matavfall": "Food Waste"
+        "Matavfall": "Food Waste",
+        "Glass og metallemballasje": "Glass And Metal Packaging"
     }
     today = datetime.today().date()
 
