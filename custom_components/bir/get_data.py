@@ -53,7 +53,7 @@ async def get_pickup_dates(session: aiohttp.ClientSession, url: str, token: str,
     base_url = "https://webservice.bir.no/api/tomminger"
     today = datetime.now()
     today_str = today.strftime('%Y-%m-%d')
-    end_date = (today + timedelta(days=31)).strftime('%Y-%m-%d')
+    end_date = (today + timedelta(days=95)).strftime('%Y-%m-%d')
     params = {
         "eiendomId": eiendom_id,
         "datoFra": today_str,
