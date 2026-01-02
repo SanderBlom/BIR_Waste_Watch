@@ -18,6 +18,9 @@ API_PROVIDER_ID: Final = "100;300;400"
 # Update interval
 SCAN_INTERVAL: Final = timedelta(hours=1)
 
+# API request timeout (seconds)
+API_TIMEOUT: Final = 30
+
 # Waste type mappings (Norwegian to English)
 WASTE_TYPE_MAP: Final = {
     "Restavfall": "Mixed Waste",
