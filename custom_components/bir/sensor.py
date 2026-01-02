@@ -1,141 +1,134 @@
-from datetime import datetime, timedelta
-from homeassistant.components.sensor import SensorEntity
+"""Sensor platform for BIR Waste Watch integration."""
+
+from __future__ import annotations
+
 import logging
-from .get_data import get_pickup_dates, login
-from homeassistant.core import HomeAssistant
+from typing import Any
+
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from typing import Any, Dict, List, Optional
-import aiohttp
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN, MANUFACTURER
+from .coordinator import BIRDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = timedelta(hours=1)
-NA_STRING = "N/A"
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: Any) -> None:
-    """Set up the sensor platform.
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the sensor platform."""
+    coordinator: BIRDataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    Args:
-        hass: HomeAssistant instance.
-        config_entry: Configuration entry for this sensor.
-        async_add_entities: Function to add entities to the platform.
-    """
-    url = config_entry.data.get("url")
-    session = aiohttp.ClientSession()
+    entities: list[SensorEntity] = []
 
-    async def close_session(event: Any) -> None:
-        """Close the aiohttp session on Home Assistant stop event."""
-        await session.close()
+    if coordinator.data:
+        for waste_type in coordinator.data:
+            entities.extend(
+                [
+                    BIRWasteDateSensor(coordinator, waste_type, config_entry),
+                    BIRWasteDaysSensor(coordinator, waste_type, config_entry),
+                ]
+            )
 
-    # Register for Home Assistant stop event to close the session
-    hass.bus.async_listen_once("homeassistant_stop", close_session)
+    async_add_entities(entities)
 
-    token = await login(session, _LOGGER)
 
-    data = await get_pickup_dates(session, url, token, _LOGGER)
+class BIRSensorBase(CoordinatorEntity[BIRDataUpdateCoordinator], SensorEntity):
+    """Base class for BIR sensors."""
 
-    if data:
-        sensors: List[SensorEntity] = []
-        for waste_type, waste_info in data.items():
-            collection_sensor = WasteCollectionSensorDates(session, url, waste_type, waste_info['dato'], config_entry.entry_id)
-            days_until_sensor = WasteCollectionSensorDays(session, url, waste_type, waste_info['days_until'], config_entry.entry_id)
-            sensors.extend([collection_sensor, days_until_sensor])
+    _attr_has_entity_name = True
 
-            await collection_sensor.async_update()
-            await days_until_sensor.async_update()
-
-        if sensors:
-            async_add_entities(sensors, True)
-
-class WasteCollectionSensorBase(SensorEntity):
-    """Base sensor for waste collection."""
-
-    def __init__(self, session: aiohttp.ClientSession, url: str, waste_type: str, entry_id: str) -> None:
-        self._session = session
-        self._url = url
+    def __init__(
+        self,
+        coordinator: BIRDataUpdateCoordinator,
+        waste_type: str,
+        config_entry: ConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
         self._waste_type = waste_type
-        self._entry_id = entry_id
-        self._last_updated: Optional[str] = None
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, config_entry.entry_id)},
+            name=f"BIR {coordinator.address}",
+            manufacturer=MANUFACTURER,
+            entry_type=DeviceEntryType.SERVICE,
+        )
 
     @property
-    def unique_id(self) -> str:
-        """Return the unique ID of the sensor."""
-        raise NotImplementedError
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return (
+            self.coordinator.last_update_success
+            and self.coordinator.data is not None
+            and self._waste_type in self.coordinator.data
+        )
 
     @property
-    def icon(self) -> str:
-        """Return the icon to be used for this sensor."""
-        return "mdi:trash-can"
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra state attributes."""
+        return {
+            "waste_type": self._waste_type,
+        }
+
+
+class BIRWasteDateSensor(BIRSensorBase):
+    """Sensor for waste collection date."""
+
+    _attr_icon = "mdi:calendar"
+
+    def __init__(
+        self,
+        coordinator: BIRDataUpdateCoordinator,
+        waste_type: str,
+        config_entry: ConfigEntry,
+    ) -> None:
+        """Initialize the date sensor."""
+        super().__init__(coordinator, waste_type, config_entry)
+        # Create human-readable name
+        readable_name = waste_type.replace("_", " ").title()
+        self._attr_unique_id = f"{config_entry.entry_id}_{waste_type}_date"
+        self._attr_translation_key = "collection_date"
+        self._attr_name = f"{readable_name} Collection Date"
 
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
-        """Return the state attributes of the sensor."""
-        return {"Last updated": self._last_updated}
+    def native_value(self) -> str | None:
+        """Return the collection date."""
+        if self.coordinator.data and self._waste_type in self.coordinator.data:
+            return self.coordinator.data[self._waste_type].get("date")
+        return None
 
-    async def async_update(self) -> None:
-        """Update the sensor state."""
-        token = await login(self._session, _LOGGER)  # Use cached token
-        data = await get_pickup_dates(self._session, self._url, token, _LOGGER)
-        if data:
-            self._last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-class WasteCollectionSensorDates(WasteCollectionSensorBase):
-    """Sensor for showing waste collection dates."""
+class BIRWasteDaysSensor(BIRSensorBase):
+    """Sensor for days until waste collection."""
 
-    def __init__(self, session: aiohttp.ClientSession, url: str, waste_type: str, date: str, entry_id: str) -> None:
-        super().__init__(session, url, waste_type, entry_id)
-        self._date = date
-        self._state = NA_STRING
+    _attr_icon = "mdi:calendar-clock"
+    _attr_native_unit_of_measurement = "days"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
-    @property
-    def unique_id(self) -> str:
-        """Return the unique ID of the sensor."""
-        return f"{self._entry_id}_{self._waste_type}_date"
-
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{self._waste_type.replace('_', ' ').title()} Collection Date"
-
-    @property
-    def state(self) -> str:
-        """Return the state of the sensor."""
-        return self._state
-
-    async def async_update(self) -> None:
-        """Update the sensor state (pickup date)."""
-        token = await login(self._session, _LOGGER)  # Use cached token
-        data = await get_pickup_dates(self._session, self._url, token, _LOGGER)
-        if data and self._waste_type in data:
-            self._state = data[self._waste_type]['dato']
-        else:
-            self._state = NA_STRING
-
-class WasteCollectionSensorDays(WasteCollectionSensorBase):
-    """Sensor for showing days until the next waste collection."""
-
-    def __init__(self, session: aiohttp.ClientSession, url: str, waste_type: str, days_until: int, entry_id: str) -> None:
-        super().__init__(session, url, waste_type, entry_id)
-        self._days_until = days_until
+    def __init__(
+        self,
+        coordinator: BIRDataUpdateCoordinator,
+        waste_type: str,
+        config_entry: ConfigEntry,
+    ) -> None:
+        """Initialize the days until sensor."""
+        super().__init__(coordinator, waste_type, config_entry)
+        # Create human-readable name
+        readable_name = waste_type.replace("_", " ").title()
+        self._attr_unique_id = f"{config_entry.entry_id}_{waste_type}_days"
+        self._attr_translation_key = "days_until_pickup"
+        self._attr_name = f"{readable_name} Days Until Pickup"
 
     @property
-    def unique_id(self) -> str:
-        """Return the unique ID of the sensor."""
-        return f"{self._entry_id}_{self._waste_type}_days"
-
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{self._waste_type.replace('_', ' ').title()} Days Until Pickup"
-
-    @property
-    def state(self) -> int:
-        """Return the state of the sensor."""
-        return self._days_until
-
-    async def async_update(self) -> None:
-        """Update the sensor state (days until pickup)."""
-        token = await login(self._session, _LOGGER)  # Use cached token
-        data = await get_pickup_dates(self._session, self._url, token, _LOGGER)
-        if data and self._waste_type in data:
-            self._days_until = data[self._waste_type]['days_until']
+    def native_value(self) -> int | None:
+        """Return the number of days until collection."""
+        if self.coordinator.data and self._waste_type in self.coordinator.data:
+            return self.coordinator.data[self._waste_type].get("days_until")
+        return None

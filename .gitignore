@@ -3,3 +3,17 @@ __pycache__/
 .dev/*
 
 dev/ha_config/configuration.yaml
+
+# Virtual environment
+venv/
+.venv/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
