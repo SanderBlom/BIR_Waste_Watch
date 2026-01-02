@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from datetime import datetime, timedelta
 import logging
 import re
@@ -161,11 +162,11 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _fetch_pickup_dates(self) -> dict[str, Any]:
         """Fetch pickup dates from BIR API."""
-        today = datetime.now()
+        now = datetime.now()
         params = {
             "eiendomId": self.property_id,
-            "datoFra": today.strftime("%Y-%m-%d"),
-            "datoTil": (today + timedelta(days=95)).strftime("%Y-%m-%d"),
+            "datoFra": now.strftime("%Y-%m-%d"),
+            "datoTil": (now + timedelta(days=95)).strftime("%Y-%m-%d"),
         }
         headers = {"Token": self._token}
 
@@ -177,11 +178,25 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Received %d pickup entries from BIR API", len(pickup_data))
 
-        return self._process_pickup_data(pickup_data)
+        return self._process_pickup_data(pickup_data, reference_date=now.date())
 
-    def _process_pickup_data(self, pickup_data: list[dict]) -> dict[str, Any]:
-        """Process raw pickup data into structured format."""
-        today = datetime.today().date()
+    def _process_pickup_data(
+        self, pickup_data: list[dict], reference_date: dt.date | None = None
+    ) -> dict[str, Any]:
+        """Process raw pickup data into structured format.
+
+        Args:
+            pickup_data: Raw pickup data from the API.
+            reference_date: The date to use for calculating days_until.
+                           Defaults to today if not provided.
+
+        Returns:
+            Dictionary mapping waste types to their next pickup information.
+
+        """
+        today = (
+            reference_date if reference_date is not None else datetime.today().date()
+        )
         next_pickups: dict[str, Any] = {}
 
         for item in pickup_data:
