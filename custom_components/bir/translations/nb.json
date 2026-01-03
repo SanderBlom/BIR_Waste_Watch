@@ -27,6 +27,36 @@
       "already_configured": "Denne adressen er allerede konfigurert"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "BIR Avfallsvakt Innstillinger",
+        "description": "Nåværende adresse: {current_address}",
+        "data": {
+          "change_address": "Endre adresse"
+        }
+      },
+      "search": {
+        "title": "Søk etter ny adresse",
+        "description": "Skriv inn minst {min_chars} tegn for å søke etter din nye adresse.",
+        "data": {
+          "address_search": "Gateadresse"
+        }
+      },
+      "select_address": {
+        "title": "Velg din nye adresse",
+        "description": "Fant {count} adresser som matcher \"{query}\". Velg din nye adresse fra listen.",
+        "data": {
+          "selected_address": "Adresse"
+        }
+      }
+    },
+    "error": {
+      "search_too_short": "Skriv inn minst 3 tegn for å søke",
+      "no_addresses_found": "Ingen adresser funnet. Prøv et annet søkeord.",
+      "cannot_connect": "Kunne ikke koble til BIR API"
+    }
+  },
   "entity": {
     "sensor": {
       "collection_date": {
