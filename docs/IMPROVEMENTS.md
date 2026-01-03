@@ -91,15 +91,15 @@ Analysis performed: January 2, 2026
 
 | # | Task | Branch | Status |
 |---|------|--------|--------|
-| 1 | Fix duplicate `return True` | `fix/duplicate-return-statement` | ⬜ Todo |
+| 1 | Fix duplicate `return True` | `fix/duplicate-return-statement` | ✅ Done |
 | 2 | Dynamic sensor creation | `fix/dynamic-sensor-creation` | ⬜ Todo |
-| 3 | Add API request timeouts | `fix/api-request-timeouts` | ⬜ Todo |
-| 4 | Consistent datetime handling | `fix/consistent-datetime-handling` | ⬜ Todo |
-| 5 | Add sensor device class | `fix/sensor-device-class` | ⬜ Todo |
-| 6 | Sync translation files | `fix/sync-translations` | ⬜ Todo |
+| 3 | Add API request timeouts | `fix/api-request-timeouts` | ✅ Done |
+| 4 | Consistent datetime handling | `fix/consistent-datetime-handling` | ✅ Done |
+| 5 | Add sensor device class | `fix/sensor-device-class` | ✅ Done |
+| 6 | Sync translation files | `fix/sync-translations` | ✅ Done |
 | 7 | Add reconfigure flow | `feature/reconfigure-flow` | ⬜ Todo |
 | 8 | Add diagnostics support | `feature/diagnostics-support` | ⬜ Todo |
-| 9 | Extract magic numbers | `fix/extract-magic-numbers` | ⬜ Todo |
-| 10 | Remove unused constants | `fix/remove-unused-constants` | ⬜ Todo |
-| 11 | Norwegian translation | `feature/norwegian-translation` | ⬜ Todo |
+| 9 | Extract magic numbers | `fix/extract-magic-numbers` | ✅ Done |
+| 10 | Remove unused constants | `fix/remove-unused-constants` | ✅ Done |
+| 11 | Norwegian translation | `feature/norwegian-translation` | ✅ Done |
 | 12 | Calendar platform | `feature/calendar-platform` | ⬜ Todo |
