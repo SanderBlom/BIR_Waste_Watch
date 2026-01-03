@@ -11,8 +11,10 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 🌟 Features
 
-- 📍 Dynamically creates sensors based on the available waste types (e.g., Mixed Waste, Paper & Plastic, Food Waste or Glass & Metal) for your address.
-- 🎛 Easy setup through Home Assistant's UI.
+- 🔍 **Easy address search**: Just type your address and select from the results - no need to copy URLs
+- 📍 **Dynamic sensors**: Automatically creates sensors for each waste type (e.g., Mixed Waste, Paper & Plastic, Food Waste, Glass & Metal)
+- 🔄 **Change address anytime**: Update your address through the integration's configuration
+- 🎛 **Simple UI setup**: Everything is configured through Home Assistant's interface
 
 ## 📝 Prerequisites
 
@@ -57,10 +59,24 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## Configuration 
 
-During the setup phase, you'll need to provide a URL from BIR.no
+Setting up BIR Waste Watch is easy with the built-in address search:
 
-1. Go to [bir.no](https://bir.no/).
-2. Enter your address in the search field and click on your address.
-3. Once you can see the dates, copy the URL from the address bar(should looks something similar to this: `https://bir.no/adressesoek/?rId=c2435f0f-2e4b-4908-86cf-bafbd3a2cf61&name=Lillehatten%20330,%20Bergen`).
-4. Paste this URL into the setup phase of the integration in Home Assistant's UI.
+1. Go to **Settings** → **Devices & Services** → **Add Integration**
+2. Search for **BIR Waste Watch** and click to add
+3. Enter your address in the search field (e.g., "Lillehatten 330")
+4. Select your address from the list of matching results
+5. Done! Sensors will be created for each waste type at your address
+
+![Address Search](/assets/config_flow.png)
+
+## Changing Your Address
+
+If you move or need to change your address:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find **BIR Waste Watch** and click on it
+3. Click the **Configure** button (gear icon ⚙️)
+4. Enter your new address and search
+5. Select the correct address from the results
+6. The integration will automatically update with your new address
 
