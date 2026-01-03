@@ -1,18 +1,31 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "title": "BIR Waste Watch configuration",
-          "description": "Please enter the bir.no url for your address. See docs for more details."
+  "config": {
+    "step": {
+      "user": {
+        "title": "BIR Waste Watch",
+        "description": "Enter your personal BIR calendar URL. You can find this on the BIR website.",
+        "data": {
+          "url": "Personal bir.no URL"
         }
+      }
+    },
+    "error": {
+      "invalid_url_domain": "Invalid URL - must be from bir.no",
+      "missing_parameters": "Missing required parameters in URL (rId and name)",
+      "cannot_connect": "Failed to connect to BIR API"
+    },
+    "abort": {
+      "already_configured": "This address is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "collection_date": {
+        "name": "{waste_type} Collection Date"
       },
-      "error": {
-        "invalid_url_domain": "Invalid domain in URL",
-        "missing_parameters": "Missing parameters in URL"
-      },
-      "abort": {
-        "already_configured": "Device is already configured"
+      "days_until_pickup": {
+        "name": "{waste_type} Days Until Pickup"
       }
     }
   }
-  
+}
