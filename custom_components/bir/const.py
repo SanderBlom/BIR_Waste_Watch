@@ -26,16 +26,5 @@ WASTE_TYPE_MAP: Final = {
     "Glass og metallemballasje": "Glass And Metal Packaging",
 }
 
-# Sensor types
-SENSOR_TYPE_DATE: Final = "date"
-SENSOR_TYPE_DAYS: Final = "days"
-
-# Attributes
-ATTR_LAST_UPDATED: Final = "last_updated"
-ATTR_WASTE_TYPE: Final = "waste_type"
-ATTR_PICKUP_DATE: Final = "pickup_date"
-
 # Config keys
 CONF_URL: Final = "url"
-CONF_PROPERTY_ID: Final = "property_id"
-CONF_ADDRESS: Final = "address"
