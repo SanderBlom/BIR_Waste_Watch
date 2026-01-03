@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_ADDRESS, CONF_PROPERTY_ID, CONF_URL, DOMAIN
@@ -73,7 +74,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Register update listener to handle options/config changes
+    entry.async_on_unload(entry.add_update_listener(async_update_listener))
+
     return True
+
+
+async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle config entry updates (e.g., address change via options flow)."""
+    # Get the new address from the updated config
+    new_address = entry.data.get(CONF_ADDRESS, "Unknown")
+    property_id = entry.data.get(CONF_PROPERTY_ID)
+
+    # Update the device registry with the new name
+    if property_id:
+        device_registry = dr.async_get(hass)
+        device = device_registry.async_get_device(identifiers={(DOMAIN, property_id)})
+        if device:
+            device_registry.async_update_device(device.id, name=new_address)
+            _LOGGER.debug("Updated device name to: %s", new_address)
+
+    # Reload the entry to refresh coordinator with new data
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
