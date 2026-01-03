@@ -8,7 +8,7 @@ import re
 from typing import Any
 from urllib.parse import unquote
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -18,6 +18,7 @@ from .const import (
     API_LOGIN_URL,
     API_PICKUP_URL,
     API_PROVIDER_ID,
+    API_TIMEOUT,
     DOMAIN,
     SCAN_INTERVAL,
     WASTE_TYPE_MAP,
@@ -139,7 +140,10 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "oppdragsgiverId": API_PROVIDER_ID,
         }
 
-        async with self.session.post(API_LOGIN_URL, json=payload) as response:
+        timeout = ClientTimeout(total=API_TIMEOUT)
+        async with self.session.post(
+            API_LOGIN_URL, json=payload, timeout=timeout
+        ) as response:
             response.raise_for_status()
             token = response.headers.get("Token")
             if not token:
@@ -169,8 +173,9 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
         headers = {"Token": self._token}
 
+        timeout = ClientTimeout(total=API_TIMEOUT)
         async with self.session.get(
-            API_PICKUP_URL, headers=headers, params=params
+            API_PICKUP_URL, headers=headers, params=params, timeout=timeout
         ) as response:
             response.raise_for_status()
             pickup_data = await response.json()
