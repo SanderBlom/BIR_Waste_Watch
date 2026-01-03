@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "BIR Avfallsvakt",
+        "description": "Skriv inn din personlige BIR kalender-URL. Du finner denne på BIR sine nettsider.",
+        "data": {
+          "url": "Personlig bir.no URL"
+        }
+      }
+    },
+    "error": {
+      "invalid_url_domain": "Ugyldig URL - må være fra bir.no",
+      "missing_parameters": "Manglende parametre i URL (rId og name)",
+      "cannot_connect": "Kunne ikke koble til BIR API"
+    },
+    "abort": {
+      "already_configured": "Denne adressen er allerede konfigurert"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "collection_date": {
+        "name": "{waste_type} hentedato"
+      },
+      "days_until_pickup": {
+        "name": "{waste_type} dager til henting"
+      }
+    }
+  }
+}
