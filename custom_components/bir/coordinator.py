@@ -21,6 +21,7 @@ from .const import (
     API_PROVIDER_ID,
     API_TIMEOUT,
     DOMAIN,
+    PICKUP_LOOKUP_DAYS,
     SCAN_INTERVAL,
     WASTE_TYPE_MAP,
 )
@@ -170,7 +171,7 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         params = {
             "eiendomId": self.property_id,
             "datoFra": now.strftime("%Y-%m-%d"),
-            "datoTil": (now + timedelta(days=95)).strftime("%Y-%m-%d"),
+            "datoTil": (now + timedelta(days=PICKUP_LOOKUP_DAYS)).strftime("%Y-%m-%d"),
         }
         headers = {"Token": self._token}
 

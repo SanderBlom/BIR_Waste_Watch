@@ -21,6 +21,9 @@ SCAN_INTERVAL: Final = timedelta(hours=1)
 # API request timeout (seconds)
 API_TIMEOUT: Final = 30
 
+# Number of days to look ahead for pickup dates
+PICKUP_LOOKUP_DAYS: Final = 95
+
 # Waste type mappings (Norwegian to English)
 WASTE_TYPE_MAP: Final = {
     "Restavfall": "Mixed Waste",
