@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import date
 import logging
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
@@ -81,6 +86,7 @@ class BIRSensorBase(CoordinatorEntity[BIRDataUpdateCoordinator], SensorEntity):
 class BIRWasteDateSensor(BIRSensorBase):
     """Sensor for waste collection date."""
 
+    _attr_device_class = SensorDeviceClass.DATE
     _attr_icon = "mdi:calendar"
 
     def __init__(
@@ -98,10 +104,12 @@ class BIRWasteDateSensor(BIRSensorBase):
         self._attr_name = f"{readable_name} Collection Date"
 
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> date | None:
         """Return the collection date."""
         if self.coordinator.data and self._waste_type in self.coordinator.data:
-            return self.coordinator.data[self._waste_type].get("date")
+            date_str = self.coordinator.data[self._waste_type].get("date")
+            if date_str:
+                return date.fromisoformat(date_str)
         return None
 
 
