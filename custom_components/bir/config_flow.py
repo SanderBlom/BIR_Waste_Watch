@@ -4,50 +4,29 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from urllib.parse import parse_qs, urlparse
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.core import callback
+from homeassistant.data_entry_flow import AbortFlow, FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 import voluptuous as vol
 
-from .const import CONF_URL, DOMAIN
-from .coordinator import BIRDataUpdateCoordinator, extract_address, extract_property_id
+from .const import CONF_ADDRESS, CONF_PROPERTY_ID, DOMAIN
+from .coordinator import BIRDataUpdateCoordinator, async_search_addresses
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_URL, default=""): str,
-    }
-)
-
-
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, str]:
-    """Validate the user input allows us to connect."""
-    url = data[CONF_URL]
-    property_id = extract_property_id(url)
-    address = extract_address(url)
-
-    if not property_id:
-        raise InvalidPropertyId
-
-    session = async_get_clientsession(hass)
-    coordinator = BIRDataUpdateCoordinator(
-        hass,
-        session,
-        property_id,
-        address or "Unknown",
-    )
-
-    # Test the connection
-    await coordinator.async_test_connection()
-
-    return {
-        "title": address or f"Property {property_id}",
-        "property_id": property_id,
-    }
+# Minimum characters before searching
+MIN_SEARCH_LENGTH = 3
 
 
 class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -55,50 +34,163 @@ class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+        self._addresses: list[dict[str, Any]] = []
+        self._search_query: str = ""
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step."""
+        """Handle the initial step - address search."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            url = user_input.get(CONF_URL, "")
-            parsed_url = urlparse(url)
+            search_query = user_input.get("address_search", "").strip()
 
-            # Check if the URL is from bir.no
-            if parsed_url.netloc != "bir.no":
-                errors["base"] = "invalid_url_domain"
+            if len(search_query) < MIN_SEARCH_LENGTH:
+                errors["base"] = "search_too_short"
             else:
-                # Check if the URL contains rId and name parameters
-                query_params = parse_qs(parsed_url.query)
-                if "rId" not in query_params or "name" not in query_params:
-                    errors["base"] = "missing_parameters"
-
-            if not errors:
                 try:
-                    info = await validate_input(self.hass, user_input)
-                except InvalidPropertyId:
-                    errors["base"] = "missing_parameters"
-                except Exception:
-                    _LOGGER.exception("Unexpected exception")
-                    errors["base"] = "cannot_connect"
-                else:
-                    # Set unique ID to prevent duplicate entries
-                    property_id = extract_property_id(url)
-                    await self.async_set_unique_id(f"bir_{property_id}")
-                    self._abort_if_unique_id_configured()
-
-                    return self.async_create_entry(
-                        title=info["title"],
-                        data={CONF_URL: url},
+                    session = async_get_clientsession(self.hass)
+                    self._addresses = await async_search_addresses(
+                        session, search_query
                     )
+                    self._search_query = search_query
+
+                    if not self._addresses:
+                        errors["base"] = "no_addresses_found"
+                    else:
+                        # Move to address selection step
+                        return await self.async_step_select_address()
+
+                except Exception:
+                    _LOGGER.exception("Error searching for addresses")
+                    errors["base"] = "cannot_connect"
 
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            data_schema=vol.Schema(
+                {
+                    vol.Required("address_search", default=""): TextSelector(
+                        TextSelectorConfig(
+                            type=TextSelectorType.TEXT,
+                            autocomplete="street-address",
+                        )
+                    ),
+                }
+            ),
             errors=errors,
+            description_placeholders={"min_chars": str(MIN_SEARCH_LENGTH)},
         )
 
+    async def async_step_select_address(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle address selection step."""
+        errors: dict[str, str] = {}
 
-class InvalidPropertyId(Exception):
-    """Error to indicate invalid property ID."""
+        if user_input is not None:
+            selected_id = user_input.get("selected_address")
+
+            if selected_id == "__search_again__":
+                # Go back to search
+                return await self.async_step_user()
+
+            if selected_id:
+                # Find the selected address
+                selected = next(
+                    (a for a in self._addresses if a["id"] == selected_id), None
+                )
+                if selected:
+                    # Validate the property works
+                    try:
+                        session = async_get_clientsession(self.hass)
+                        coordinator = BIRDataUpdateCoordinator(
+                            self.hass,
+                            session,
+                            selected["id"],
+                            selected["adresse"],
+                        )
+                        await coordinator.async_test_connection()
+
+                        # Set unique ID to prevent duplicates
+                        await self.async_set_unique_id(f"bir_{selected['id']}")
+                        self._abort_if_unique_id_configured()
+
+                        return self.async_create_entry(
+                            title=selected["adresse"],
+                            data={
+                                CONF_PROPERTY_ID: selected["id"],
+                                CONF_ADDRESS: selected["adresse"],
+                            },
+                        )
+                    except AbortFlow:
+                        raise
+                    except Exception:
+                        _LOGGER.exception("Error validating property")
+                        errors["base"] = "cannot_connect"
+
+        # Build address options
+        options = [
+            SelectOptionDict(
+                value=addr["id"],
+                label=f"{addr['adresse']} ({addr.get('kommune', '')})",
+            )
+            for addr in self._addresses
+        ]
+
+        # Add search again option at the end
+        options.append(
+            SelectOptionDict(
+                value="__search_again__",
+                label="🔍 Search again...",
+            )
+        )
+
+        return self.async_show_form(
+            step_id="select_address",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("selected_address"): SelectSelector(
+                        SelectSelectorConfig(
+                            options=options,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    ),
+                }
+            ),
+            errors=errors,
+            description_placeholders={
+                "count": str(len(self._addresses)),
+                "query": self._search_query,
+            },
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Create the options flow."""
+        return BIROptionsFlowHandler(config_entry)
+
+
+class BIROptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options flow for BIR Waste Watch."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({}),
+        )

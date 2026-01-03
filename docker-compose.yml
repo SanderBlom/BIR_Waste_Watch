@@ -1,13 +1,15 @@
 services:
   homeassistant:
     restart: unless-stopped
-    image: ghcr.io/home-assistant/home-assistant:stable
+    image: homeassistant/home-assistant:stable
     container_name: homeassistant_dev
-    network_mode: host
-    privileged: true
+    ports:
+      - "8123:8123"
     volumes:
-      - ./custom_components/bir/:/config/custom_components/BIR_Waste_Watch
-      - ./src/translations:/config/custom_components/BIR_Waste_Watch/translations
-      - /etc/homeassistant/config:/config
+      - ./custom_components/bir:/config/custom_components/bir
+      - ha_config:/config
     environment:
       - TZ=Europe/Oslo
+
+volumes:
+  ha_config:
