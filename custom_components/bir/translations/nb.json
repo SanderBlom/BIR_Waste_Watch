@@ -3,16 +3,25 @@
     "step": {
       "user": {
         "title": "BIR Avfallsvakt",
-        "description": "Skriv inn din personlige BIR kalender-URL. Du finner denne på BIR sine nettsider.",
+        "description": "Søk etter din adresse for å sette opp avfallshentevarsel. Skriv inn minst {min_chars} tegn.",
         "data": {
-          "url": "Personlig bir.no URL"
+          "address_search": "Gateadresse"
+        }
+      },
+      "select_address": {
+        "title": "Velg din adresse",
+        "description": "Fant {count} adresser som matcher \"{query}\". Velg din adresse fra listen.",
+        "data": {
+          "selected_address": "Adresse"
         }
       }
     },
     "error": {
+      "search_too_short": "Skriv inn minst 3 tegn for å søke",
+      "no_addresses_found": "Ingen adresser funnet. Prøv et annet søkeord.",
+      "cannot_connect": "Kunne ikke koble til BIR API",
       "invalid_url_domain": "Ugyldig URL - må være fra bir.no",
-      "missing_parameters": "Manglende parametre i URL (rId og name)",
-      "cannot_connect": "Kunne ikke koble til BIR API"
+      "missing_parameters": "Manglende parametre i URL (rId og name)"
     },
     "abort": {
       "already_configured": "Denne adressen er allerede konfigurert"

@@ -10,6 +10,7 @@ MANUFACTURER: Final = "BIR"
 API_BASE_URL: Final = "https://webservice.bir.no/api"
 API_LOGIN_URL: Final = f"{API_BASE_URL}/login"
 API_PICKUP_URL: Final = f"{API_BASE_URL}/tomminger"
+API_ADDRESS_SEARCH_URL: Final = f"{API_BASE_URL}/eiendommer"
 
 # API credentials
 API_APP_ID: Final = "94FA72AD-583D-4AA3-988F-491F694DFB7B"
@@ -34,3 +35,5 @@ WASTE_TYPE_MAP: Final = {
 
 # Config keys
 CONF_URL: Final = "url"
+CONF_PROPERTY_ID: Final = "property_id"
+CONF_ADDRESS: Final = "address"

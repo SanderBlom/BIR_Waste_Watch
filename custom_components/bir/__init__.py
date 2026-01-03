@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_URL, DOMAIN
+from .const import CONF_ADDRESS, CONF_PROPERTY_ID, CONF_URL, DOMAIN
 from .coordinator import (
     BIRDataUpdateCoordinator,
     BIRTokenStorage,
@@ -32,13 +32,20 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up BIR Waste Watch from a config entry."""
-    url = entry.data[CONF_URL]
-    property_id = extract_property_id(url)
-    address = extract_address(url) or "Unknown"
+    # Support both new (property_id) and legacy (url) config formats
+    if CONF_PROPERTY_ID in entry.data:
+        # New format: direct property_id and address
+        property_id = entry.data[CONF_PROPERTY_ID]
+        address = entry.data.get(CONF_ADDRESS, "Unknown")
+    else:
+        # Legacy format: extract from URL
+        url = entry.data[CONF_URL]
+        property_id = extract_property_id(url)
+        address = extract_address(url) or "Unknown"
 
-    if not property_id:
-        _LOGGER.error("Could not extract property ID from URL")
-        return False
+        if not property_id:
+            _LOGGER.error("Could not extract property ID from URL")
+            return False
 
     session = async_get_clientsession(hass)
 

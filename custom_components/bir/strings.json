@@ -3,16 +3,25 @@
     "step": {
       "user": {
         "title": "BIR Waste Watch",
-        "description": "Enter your personal BIR calendar URL. You can find this on the BIR website.",
+        "description": "Search for your address to set up waste collection tracking. Enter at least {min_chars} characters.",
         "data": {
-          "url": "Personal bir.no URL"
+          "address_search": "Street address"
+        }
+      },
+      "select_address": {
+        "title": "Select Your Address",
+        "description": "Found {count} addresses matching \"{query}\". Select your address from the list below.",
+        "data": {
+          "selected_address": "Address"
         }
       }
     },
     "error": {
+      "search_too_short": "Please enter at least 3 characters to search",
+      "no_addresses_found": "No addresses found. Try a different search term.",
+      "cannot_connect": "Failed to connect to BIR API",
       "invalid_url_domain": "Invalid URL - must be from bir.no",
-      "missing_parameters": "Missing required parameters in URL (rId and name)",
-      "cannot_connect": "Failed to connect to BIR API"
+      "missing_parameters": "Missing required parameters in URL (rId and name)"
     },
     "abort": {
       "already_configured": "This address is already configured"
@@ -23,7 +32,7 @@
       "collection_date": {
         "name": "{waste_type} Collection Date"
       },
-      "days_until": {
+      "days_until_pickup": {
         "name": "{waste_type} Days Until Pickup"
       }
     }
