@@ -144,6 +144,11 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 raise
 
         except ClientResponseError as err:
+            if err.status == 504:
+                raise UpdateFailed(
+                    "BIR API is not responding (timeout). This is likely a temporary "
+                    "issue with BIR's servers. Will retry automatically."
+                ) from err
             raise UpdateFailed(f"Error communicating with BIR API: {err}") from err
         except Exception as err:
             raise UpdateFailed(f"Unexpected error: {err}") from err
