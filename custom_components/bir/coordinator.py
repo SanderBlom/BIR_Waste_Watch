@@ -94,7 +94,7 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 _LOGGER.debug("Loaded cached token for property %s", self.property_id)
 
     async def async_test_connection(self) -> bool:
-        """Test if we can connect to the BIR API.
+        """Test if we can connect to the BIR API and fetch data.
 
         Returns:
             True if connection is successful.
@@ -103,8 +103,23 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             Exception: If connection fails.
 
         """
-        # Just try to login to test the connection
-        await self._login()
+        # Get token (uses cached if available)
+        if not self._token:
+            self._token = await self._login()
+
+        # Try to fetch data, refresh token on failure
+        try:
+            await self._fetch_pickup_dates()
+        except ClientResponseError as err:
+            if err.status in (401, 500):
+                # Token might be expired, try refreshing
+                _LOGGER.debug("Test connection got %s, refreshing token...", err.status)
+                await self._clear_token()
+                self._token = await self._login(force_refresh=True)
+                await self._fetch_pickup_dates()
+            else:
+                raise
+
         return True
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -118,9 +133,11 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             try:
                 return await self._fetch_pickup_dates()
             except ClientResponseError as err:
-                if err.status == 401:
-                    # Token expired, clear and refresh
-                    _LOGGER.debug("Token expired, refreshing...")
+                if err.status in (401, 500):
+                    # Token expired or server error (BIR returns 500 for bad tokens)
+                    _LOGGER.debug(
+                        "Got %s error, refreshing token and retrying...", err.status
+                    )
                     await self._clear_token()
                     self._token = await self._login(force_refresh=True)
                     return await self._fetch_pickup_dates()
@@ -176,10 +193,24 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
         headers = {"Token": self._token}
 
+        _LOGGER.debug(
+            "Fetching pickup dates for property %s from %s to %s",
+            self.property_id,
+            params["datoFra"],
+            params["datoTil"],
+        )
+
         timeout = ClientTimeout(total=API_TIMEOUT)
         async with self.session.get(
             API_PICKUP_URL, headers=headers, params=params, timeout=timeout
         ) as response:
+            if response.status == 500:
+                # Server error - could be invalid property ID
+                _LOGGER.error(
+                    "BIR API returned 500 error for property %s. "
+                    "The property ID may be invalid or the API format has changed.",
+                    self.property_id,
+                )
             response.raise_for_status()
             pickup_data = await response.json()
 

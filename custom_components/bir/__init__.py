@@ -15,9 +15,77 @@ from .const import CONF_ADDRESS, CONF_PROPERTY_ID, CONF_URL, DOMAIN
 from .coordinator import (
     BIRDataUpdateCoordinator,
     BIRTokenStorage,
+    async_search_addresses,
     extract_address,
     extract_property_id,
 )
+
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS: list[Platform] = [Platform.SENSOR]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate old config entries to new format.
+
+    Version 1 -> 2: Migrate from URL-based config to property_id based config.
+    The old rId from the URL may not work with the current API, so we try to
+    look up the property by address.
+    """
+    _LOGGER.debug("Migrating BIR config entry from version %s", entry.version)
+
+    if entry.version == 1:
+        # Check if this is an old URL-based entry that needs migration
+        if CONF_URL in entry.data and CONF_PROPERTY_ID not in entry.data:
+            url = entry.data[CONF_URL]
+            old_property_id = extract_property_id(url)
+            address = extract_address(url) or "Unknown"
+
+            _LOGGER.info(
+                "Migrating BIR entry from URL format. Address: %s, Old ID: %s",
+                address,
+                old_property_id,
+            )
+
+            # Try to look up the property by address to get new ID
+            new_property_id = old_property_id
+            try:
+                session = async_get_clientsession(hass)
+                # Search for the address
+                addresses = await async_search_addresses(session, address)
+                if addresses:
+                    # Use the first match
+                    new_property_id = addresses[0]["id"]
+                    address = addresses[0].get("adresse", address)
+                    _LOGGER.info(
+                        "Found new property ID via address search: %s -> %s",
+                        old_property_id,
+                        new_property_id,
+                    )
+            except Exception:
+                _LOGGER.warning(
+                    "Could not look up new property ID for %s, using old ID",
+                    address,
+                )
+
+            # Update to new format
+            new_data = {
+                CONF_PROPERTY_ID: new_property_id,
+                CONF_ADDRESS: address,
+            }
+
+            hass.config_entries.async_update_entry(
+                entry, data=new_data, version=2, title=address
+            )
+            _LOGGER.info("Migration to version 2 successful for %s", address)
+
+        else:
+            # Already has property_id, just bump version
+            hass.config_entries.async_update_entry(entry, version=2)
+
+    return True
 
 _LOGGER = logging.getLogger(__name__)
 

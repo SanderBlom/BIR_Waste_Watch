@@ -32,7 +32,7 @@ MIN_SEARCH_LENGTH = 3
 class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for BIR Waste Watch."""
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -226,7 +226,10 @@ class BIROptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
             errors=errors,
-            description_placeholders={"min_chars": str(MIN_SEARCH_LENGTH)},
+            description_placeholders={
+                "min_chars": str(MIN_SEARCH_LENGTH),
+                "current_address": current_address,
+            },
         )
 
     async def async_step_select_address(
