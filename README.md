@@ -11,10 +11,8 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 🌟 Features
 
-- 🔍 **Easy address search**: Just type your address and select from the results - no need to copy URLs
-- 📍 **Dynamic sensors**: Automatically creates sensors for each waste type (e.g., Mixed Waste, Paper & Plastic, Food Waste, Glass & Metal)
-- 🔄 **Change address anytime**: Update your address through the integration's configuration
-- 🎛 **Simple UI setup**: Everything is configured through Home Assistant's interface
+- 📍 Dynamically creates sensors based on the available waste types (e.g., Mixed Waste, Paper & Plastic, Food Waste or Glass & Metal) for your address.
+- 🎛 Easy setup through Home Assistant's UI.
 
 ## 📝 Prerequisites
 
@@ -63,7 +61,7 @@ Setting up BIR Waste Watch is easy with the built-in address search:
 
 1. Go to **Settings** → **Devices & Services** → **Add Integration**
 2. Search for **BIR Waste Watch** and click to add
-3. Enter your address in the search field (e.g., "Lillehatten 330")
+3. Enter your address in the search field. (e.g., "Lillehatten 330")
 4. Select your address from the list of matching results
 5. Done! Sensors will be created for each waste type at your address
 
