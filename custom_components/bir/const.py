@@ -10,7 +10,9 @@ MANUFACTURER: Final = "BIR"
 API_BASE_URL: Final = "https://webservice.bir.no/api"
 API_LOGIN_URL: Final = f"{API_BASE_URL}/login"
 API_PICKUP_URL: Final = f"{API_BASE_URL}/tomminger"
-API_ADDRESS_SEARCH_URL: Final = f"{API_BASE_URL}/eiendommer"
+# Address search uses the BIR website API which has a more complete database
+# than the webservice API (includes Askøy and other municipalities)
+API_ADDRESS_SEARCH_URL: Final = "https://bir.no/api/search/AddressSearch"
 
 # API credentials
 API_APP_ID: Final = "94FA72AD-583D-4AA3-988F-491F694DFB7B"
