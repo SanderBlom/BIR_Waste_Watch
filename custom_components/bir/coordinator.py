@@ -6,7 +6,7 @@ import datetime as dt
 from datetime import datetime, timedelta
 import logging
 import re
-from typing import Any
+from typing import Any, TypedDict
 from urllib.parse import unquote
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout
@@ -283,42 +283,40 @@ def extract_address(url: str) -> str | None:
     return None
 
 
+class AddressSearchResult(TypedDict):
+    """Type definition for address search results."""
+
+    id: str
+    adresse: str
+
+
 async def async_search_addresses(
-    session: ClientSession, query: str, token: str | None = None
-) -> list[dict[str, Any]]:
-    """Search for addresses using the BIR API.
+    session: ClientSession, query: str | None = None
+) -> list[AddressSearchResult]:
+    """Search for addresses using the BIR website API.
 
     Args:
         session: aiohttp client session.
         query: Address search query (street name, partial address, etc.).
-        token: Optional auth token. If not provided, will login first.
 
     Returns:
-        List of matching properties with id, address, municipality, etc.
+        List of matching properties with id and address.
 
     """
-    # Get token if not provided
-    if not token:
-        payload = {
-            "applikasjonsId": API_APP_ID,
-            "oppdragsgiverId": API_PROVIDER_ID,
-        }
-        timeout = ClientTimeout(total=API_TIMEOUT)
-        async with session.post(
-            API_LOGIN_URL, json=payload, timeout=timeout
-        ) as response:
-            response.raise_for_status()
-            token = response.headers.get("Token")
-            if not token:
-                raise ValueError("Login failed: Token not found")
-
-    # Search for addresses
-    params = {"adresse": query}
-    headers = {"Token": token}
+    params = {"q": query, "s": "false"}
     timeout = ClientTimeout(total=API_TIMEOUT)
 
     async with session.get(
-        API_ADDRESS_SEARCH_URL, headers=headers, params=params, timeout=timeout
+        API_ADDRESS_SEARCH_URL, params=params, timeout=timeout
     ) as response:
         response.raise_for_status()
-        return await response.json()
+        results = await response.json()
+
+    return [
+        {
+            "id": item.get("Id"),
+            "adresse": f"{item.get('Title', '')}, {item.get('SubTitle', '')}",
+        }
+        for item in results
+        if item.get("Id")
+    ]

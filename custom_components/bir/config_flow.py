@@ -135,7 +135,7 @@ class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         options = [
             SelectOptionDict(
                 value=addr["id"],
-                label=f"{addr['adresse']} ({addr.get('kommune', '')})",
+                label=addr["adresse"],
             )
             for addr in self._addresses
         ]
@@ -278,7 +278,7 @@ class BIROptionsFlowHandler(config_entries.OptionsFlow):
         options = [
             SelectOptionDict(
                 value=addr["id"],
-                label=f"{addr['adresse']} ({addr.get('kommune', '')})",
+                label=addr["adresse"],
             )
             for addr in self._addresses
         ]
