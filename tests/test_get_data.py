@@ -1,8 +1,11 @@
 """Test BIR Waste Watch coordinator module."""
 
 from datetime import datetime
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from aiohttp import ClientResponseError
+from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
 
 from custom_components.bir.coordinator import (
@@ -10,6 +13,34 @@ from custom_components.bir.coordinator import (
     extract_address,
     extract_property_id,
 )
+
+
+def _mock_get_response(status: int, payload: list | None = None) -> AsyncMock:
+    """Build a mocked aiohttp GET context manager with the given status."""
+    response = AsyncMock()
+    response.status = status
+    response.json = AsyncMock(return_value=payload or [])
+    if status >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=ClientResponseError(MagicMock(), (), status=status)
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    return AsyncMock(
+        __aenter__=AsyncMock(return_value=response),
+        __aexit__=AsyncMock(return_value=False),
+    )
+
+
+def _mock_login_response(token: str = "fresh_token") -> AsyncMock:
+    """Build a mocked aiohttp POST context manager for login."""
+    response = AsyncMock()
+    response.headers = {"Token": token}
+    response.raise_for_status = MagicMock()
+    return AsyncMock(
+        __aenter__=AsyncMock(return_value=response),
+        __aexit__=AsyncMock(return_value=False),
+    )
 
 
 class TestExtractFunctions:
@@ -175,3 +206,55 @@ class TestCoordinator:
 
         assert "Mixed Waste" in result
         assert len(result) == 1
+
+
+class TestTokenExpiry:
+    """BIR answers 500 for an expired token; only a failed retry is an error."""
+
+    PICKUP = [{"fraksjon": "Restavfall", "dato": "2099-01-15T00:00:00"}]
+
+    @pytest.fixture
+    def coordinator(self):
+        """Coordinator with a stale cached token."""
+        session = MagicMock()
+        session.post = MagicMock(return_value=_mock_login_response())
+        coordinator = BIRDataUpdateCoordinator(
+            MagicMock(), session, "12345", "Test Address"
+        )
+        coordinator._token = "expired_token"
+        return coordinator
+
+    async def test_expired_token_retry_succeeds_without_error_log(
+        self, coordinator, caplog
+    ):
+        """A 500 followed by a successful retry returns data and logs no ERROR."""
+        coordinator.session.get = MagicMock(
+            side_effect=[
+                _mock_get_response(500),
+                _mock_get_response(200, self.PICKUP),
+            ]
+        )
+
+        with caplog.at_level(logging.DEBUG, logger="custom_components.bir"):
+            result = await coordinator._async_update_data()
+
+        assert "Mixed Waste" in result
+        assert coordinator._token == "fresh_token"
+        coordinator.session.post.assert_called_once()
+        assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
+
+    async def test_500_after_fresh_login_raises_update_failed(
+        self, coordinator, caplog
+    ):
+        """A 500 on the retry is a real failure and names the property."""
+        coordinator.session.get = MagicMock(
+            side_effect=[_mock_get_response(500), _mock_get_response(500)]
+        )
+
+        with (
+            caplog.at_level(logging.DEBUG, logger="custom_components.bir"),
+            pytest.raises(UpdateFailed, match="12345.*after a fresh login"),
+        ):
+            await coordinator._async_update_data()
+
+        assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
