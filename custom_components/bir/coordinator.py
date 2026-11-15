@@ -149,6 +149,12 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "BIR API is not responding (timeout). This is likely a temporary "
                     "issue with BIR's servers. Will retry automatically."
                 ) from err
+            if err.status == 500:
+                raise UpdateFailed(
+                    f"BIR API returned 500 for property {self.property_id} "
+                    "after a fresh login. The property ID may be invalid or "
+                    "the API format has changed."
+                ) from err
             raise UpdateFailed(f"Error communicating with BIR API: {err}") from err
         except Exception as err:
             raise UpdateFailed(f"Unexpected error: {err}") from err
@@ -210,12 +216,10 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             API_PICKUP_URL, headers=headers, params=params, timeout=timeout
         ) as response:
             if response.status == 500:
-                # Server error - could be invalid property ID
-                _LOGGER.error(
-                    "BIR API returned 500 error for property %s. "
-                    "The property ID may be invalid or the API format has changed.",
-                    self.property_id,
-                )
+                # BIR answers 500 for an expired token as well as for real
+                # errors. The caller retries after a fresh login and reports
+                # a failure only if the retry fails too.
+                _LOGGER.debug("BIR API returned 500 for property %s", self.property_id)
             response.raise_for_status()
             pickup_data = await response.json()
 
