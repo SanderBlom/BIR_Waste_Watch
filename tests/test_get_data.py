@@ -258,3 +258,23 @@ class TestTokenExpiry:
             await coordinator._async_update_data()
 
         assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
+
+    async def test_login_500_is_not_reported_as_property_error(self, coordinator):
+        """A 500 from the login endpoint must not blame the property ID."""
+        login_response = AsyncMock()
+        login_response.raise_for_status = MagicMock(
+            side_effect=ClientResponseError(MagicMock(), (), status=500)
+        )
+        coordinator.session.post = MagicMock(
+            return_value=AsyncMock(
+                __aenter__=AsyncMock(return_value=login_response),
+                __aexit__=AsyncMock(return_value=False),
+            )
+        )
+        coordinator.session.get = MagicMock(side_effect=[_mock_get_response(500)])
+
+        with pytest.raises(UpdateFailed) as exc_info:
+            await coordinator._async_update_data()
+
+        assert "after a fresh login" not in str(exc_info.value)
+        assert "Error communicating with BIR API" in str(exc_info.value)
