@@ -21,21 +21,20 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 📦 Installation
 
-Install BIR Waste Watch through HACS:
+On Home Assistant 2026.11 or newer, install BIR Waste Watch from the built-in Marketplace:
 
-1. [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=sanderblom&repository=690180198&category=integration), or search for **BIR Waste Watch** under **HACS → Integrations**.
-2. Install the integration and restart Home Assistant.
-3. Go to **Settings → Devices & services → Add integration**, search for **BIR Waste Watch**, and follow the [configuration guide](#configuration).
+1. Go to **Settings → Marketplace** and search for **BIR Waste Watch**.
+2. Select **Install** and follow the [configuration guide](#configuration). New installs do not require a restart.
+
+On earlier Home Assistant versions, install **BIR Waste Watch** through HACS, restart Home Assistant, then add it under **Settings → Devices & services → Add integration**.
 
 ## Configuration 
 
 Setting up BIR Waste Watch is easy with the built-in address search:
 
-1. Go to **Settings** → **Devices & Services** → **Add Integration**
-2. Search for **BIR Waste Watch** and click to add
-3. Enter your address in the search field. (e.g., "Lillehatten 330")
-4. Select your address from the list of matching results
-5. Done! Sensors will be created for each waste type at your address
+1. Enter your address in the search field (e.g., "Lillehatten 330").
+2. Select your address from the list of matching results.
+3. Done! Sensors will be created for each waste type at your address.
 
 ![Address Search](/assets/config_flow.png)
 
