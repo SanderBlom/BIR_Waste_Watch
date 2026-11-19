@@ -21,39 +21,11 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 📦 Installation
 
-### Option 1: HACS
-- Follow [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=sanderblom&repository=690180198&category=integration) and install it
-- Restart Home Assistant
+Install BIR Waste Watch through HACS:
 
-  *or*
-- Go to `HACS` -> `Integrations`,
-- Select `+`,
-- Search for `BIR Waste Watch` and install it,
-- Restart Home Assistant
-- Go to `Devices & services` and click add integration and search for `BIR Waste Watch`
-- Follow the configuration guide bellow
-
-### Option 2: Manual
-
-1. **Download the latest release [here](https://github.com/SanderBlom/BIR_Waste_Watch/releases).**
-
-2. **Extract the zip and copy the files to the custom_components folder.**
-
-    ```bash
-    cp -r bir/ /config/custom_components/
-    ```
-
-3. **Restart Home Assistant**
-
-    Restart your Home Assistant instance to pick up the new files.
-
-4. **Add Integration**
-
-    - Go to Home Assistant's UI.
-    - Navigate to **Settings**.
-    - Go to **Devices and Services**.
-    - Click **Add Integration**.
-    - Search for **BIR Waste Watch** and click to add.
+1. [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=sanderblom&repository=690180198&category=integration), or search for **BIR Waste Watch** under **HACS → Integrations**.
+2. Install the integration and restart Home Assistant.
+3. Go to **Settings → Devices & services → Add integration**, search for **BIR Waste Watch**, and follow the [configuration guide](#configuration).
 
 ## Configuration 
 
@@ -77,4 +49,3 @@ If you move or need to change your address:
 4. Enter your new address and search
 5. Select the correct address from the results
 6. The integration will automatically update with your new address
-
