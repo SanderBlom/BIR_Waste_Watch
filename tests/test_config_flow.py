@@ -255,3 +255,122 @@ async def test_already_configured(hass: HomeAssistant) -> None:
 
     assert result3["type"] == FlowResultType.ABORT
     assert result3["reason"] == "already_configured"
+
+
+@pytest.fixture
+def configured_entry(hass: HomeAssistant) -> MockConfigEntry:
+    """Create an existing entry for address-change tests."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Old address",
+        data={"property_id": "11111", "address": "Old address"},
+        unique_id="bir_11111",
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+async def test_options_search_validation(
+    hass: HomeAssistant, configured_entry: MockConfigEntry
+) -> None:
+    """Show the current address and reject a too-short search."""
+    result = await hass.config_entries.options.async_init(configured_entry.entry_id)
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "init"
+    assert result["description_placeholders"]["current_address"] == "Old address"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"address_search": "ab"}
+    )
+    assert result["errors"] == {"base": "search_too_short"}
+
+
+@pytest.mark.parametrize(
+    ("addresses", "error"),
+    [([], "no_addresses_found"), (Exception("API unavailable"), "cannot_connect")],
+)
+async def test_options_search_errors(
+    hass: HomeAssistant,
+    configured_entry: MockConfigEntry,
+    addresses: list[dict] | Exception,
+    error: str,
+) -> None:
+    """Show errors for empty results and API failures without changing the entry."""
+    result = await hass.config_entries.options.async_init(configured_entry.entry_id)
+    with patch(
+        "custom_components.bir.config_flow.async_search_addresses",
+        new_callable=AsyncMock,
+        side_effect=addresses if isinstance(addresses, Exception) else None,
+        return_value=addresses if isinstance(addresses, list) else None,
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"address_search": "Testveien"}
+        )
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": error}
+    assert configured_entry.data["property_id"] == "11111"
+
+
+async def test_options_change_address(
+    hass: HomeAssistant, configured_entry: MockConfigEntry
+) -> None:
+    """Searching, then selecting an address updates the existing entry."""
+    result = await hass.config_entries.options.async_init(configured_entry.entry_id)
+    with patch(
+        "custom_components.bir.config_flow.async_search_addresses",
+        new_callable=AsyncMock,
+        return_value=MOCK_ADDRESSES,
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"address_search": "Testveien"}
+        )
+    assert result["step_id"] == "select_address"
+
+    with patch(
+        "custom_components.bir.config_flow.BIRDataUpdateCoordinator.async_test_connection",
+        new_callable=AsyncMock,
+    ) as test_connection:
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"selected_address": "12345"}
+        )
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert configured_entry.data == {
+        "property_id": "12345",
+        "address": "Testveien 1",
+    }
+    assert configured_entry.title == "Testveien 1"
+    assert configured_entry.unique_id == "bir_12345"
+    test_connection.assert_awaited_once()
+
+
+async def test_options_failed_validation_and_search_again(
+    hass: HomeAssistant, configured_entry: MockConfigEntry
+) -> None:
+    """A failed connection keeps the entry unchanged and allows searching again."""
+    result = await hass.config_entries.options.async_init(configured_entry.entry_id)
+    with patch(
+        "custom_components.bir.config_flow.async_search_addresses",
+        new_callable=AsyncMock,
+        return_value=MOCK_ADDRESSES,
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"address_search": "Testveien"}
+        )
+
+    with patch(
+        "custom_components.bir.config_flow.BIRDataUpdateCoordinator.async_test_connection",
+        new_callable=AsyncMock,
+        side_effect=ConnectionError("API unavailable"),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"selected_address": "12345"}
+        )
+    assert result["errors"] == {"base": "cannot_connect"}
+    assert configured_entry.data["property_id"] == "11111"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"selected_address": "__search_again__"}
+    )
+    assert result["step_id"] == "init"
