@@ -21,49 +21,20 @@ This Home Assistant extension dynamically generates sensors for waste collection
 
 ## 📦 Installation
 
-### Option 1: HACS
-- Follow [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=sanderblom&repository=690180198&category=integration) and install it
-- Restart Home Assistant
+On Home Assistant 2026.11 or newer, install BIR Waste Watch from the built-in Marketplace:
 
-  *or*
-- Go to `HACS` -> `Integrations`,
-- Select `+`,
-- Search for `BIR Waste Watch` and install it,
-- Restart Home Assistant
-- Go to `Devices & services` and click add integration and search for `BIR Waste Watch`
-- Follow the configuration guide bellow
+1. Go to **Settings → Marketplace** and search for **BIR Waste Watch**.
+2. Select **Install** and follow the [configuration guide](#configuration). New installs do not require a restart.
 
-### Option 2: Manual
-
-1. **Download the latest release [here](https://github.com/SanderBlom/BIR_Waste_Watch/releases).**
-
-2. **Extract the zip and copy the files to the custom_components folder.**
-
-    ```bash
-    cp -r bir/ /config/custom_components/
-    ```
-
-3. **Restart Home Assistant**
-
-    Restart your Home Assistant instance to pick up the new files.
-
-4. **Add Integration**
-
-    - Go to Home Assistant's UI.
-    - Navigate to **Settings**.
-    - Go to **Devices and Services**.
-    - Click **Add Integration**.
-    - Search for **BIR Waste Watch** and click to add.
+On earlier Home Assistant versions, install **BIR Waste Watch** through HACS, restart Home Assistant, then add it under **Settings → Devices & services → Add integration**.
 
 ## Configuration 
 
 Setting up BIR Waste Watch is easy with the built-in address search:
 
-1. Go to **Settings** → **Devices & Services** → **Add Integration**
-2. Search for **BIR Waste Watch** and click to add
-3. Enter your address in the search field. (e.g., "Lillehatten 330")
-4. Select your address from the list of matching results
-5. Done! Sensors will be created for each waste type at your address
+1. Enter your address in the search field (e.g., "Lillehatten 330").
+2. Select your address from the list of matching results.
+3. Done! Sensors will be created for each waste type at your address.
 
 ![Address Search](/assets/config_flow.png)
 
@@ -77,4 +48,3 @@ If you move or need to change your address:
 4. Enter your new address and search
 5. Select the correct address from the results
 6. The integration will automatically update with your new address
-
