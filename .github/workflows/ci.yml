@@ -1,0 +1,25 @@
+name: Tests and lint
+
+on:
+  push:
+    branches: [trunk]
+  # Fork PR runs require maintainer approval in repository Actions settings.
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - name: Install dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Lint
+        run: ruff check --select E4,E7,E9,F custom_components tests
+      - name: Test
+        run: python -m pytest -q
