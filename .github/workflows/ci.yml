@@ -3,8 +3,8 @@ name: Tests and lint
 on:
   push:
     branches: [trunk]
-  pull_request:
-    branches: [trunk]
+  # Fork PR runs require maintainer approval in repository Actions settings.
+  pull_request: {}
 
 permissions:
   contents: read
