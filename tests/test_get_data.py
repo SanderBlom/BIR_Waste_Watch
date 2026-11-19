@@ -10,6 +10,8 @@ import pytest
 
 from custom_components.bir.coordinator import (
     BIRDataUpdateCoordinator,
+    BIRTokenStorage,
+    async_search_addresses,
     extract_address,
     extract_property_id,
 )
@@ -278,3 +280,146 @@ class TestTokenExpiry:
 
         assert "after a fresh login" not in str(exc_info.value)
         assert "Error communicating with BIR API" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("status", [401, 500])
+async def test_connection_refreshes_expired_token(status: int) -> None:
+    """Connection validation retries on authentication failures from BIR."""
+    session = MagicMock()
+    session.post = MagicMock(return_value=_mock_login_response())
+    session.get = MagicMock(
+        side_effect=[_mock_get_response(status), _mock_get_response(200)]
+    )
+    storage = MagicMock()
+    storage.async_clear_token = AsyncMock()
+    storage.async_save_token = AsyncMock()
+    coordinator = BIRDataUpdateCoordinator(
+        MagicMock(), session, "12345", "Test Address", token_storage=storage
+    )
+    coordinator._token = "stale_token"
+
+    assert await coordinator.async_test_connection()
+    assert coordinator._token == "fresh_token"
+    assert session.get.call_count == 2
+    storage.async_clear_token.assert_awaited_once_with("12345")
+    storage.async_save_token.assert_awaited_once_with("12345", "fresh_token")
+
+
+async def test_connection_does_not_retry_other_http_errors() -> None:
+    """Only authentication-related failures justify a fresh login."""
+    session = MagicMock()
+    session.get = MagicMock(return_value=_mock_get_response(403))
+    coordinator = BIRDataUpdateCoordinator(MagicMock(), session, "12345", "Address")
+    coordinator._token = "valid_token"
+
+    with pytest.raises(ClientResponseError) as exc_info:
+        await coordinator.async_test_connection()
+
+    assert exc_info.value.status == 403
+    session.get.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("status", "message"),
+    [(504, "not responding"), (403, "Error communicating with BIR API")],
+)
+async def test_update_reports_http_failures(status: int, message: str) -> None:
+    """Expose a useful error for timeouts and other HTTP failures."""
+    session = MagicMock()
+    session.get = MagicMock(return_value=_mock_get_response(status))
+    coordinator = BIRDataUpdateCoordinator(MagicMock(), session, "12345", "Address")
+    coordinator._token = "valid_token"
+
+    with pytest.raises(UpdateFailed, match=message):
+        await coordinator._async_update_data()
+
+    session.get.assert_called_once()
+
+
+async def test_update_wraps_unexpected_errors() -> None:
+    """Unexpected network errors become coordinator update failures."""
+    coordinator = BIRDataUpdateCoordinator(MagicMock(), MagicMock(), "12345", "Address")
+    coordinator._token = "valid_token"
+    with (
+        patch.object(
+            coordinator, "_fetch_pickup_dates", side_effect=ConnectionError("offline")
+        ),
+        pytest.raises(UpdateFailed, match="Unexpected error: offline"),
+    ):
+        await coordinator._async_update_data()
+
+
+async def test_cached_token_and_missing_login_token() -> None:
+    """Load saved tokens and report an invalid login response."""
+    storage = MagicMock()
+    storage.async_get_token = AsyncMock(return_value="saved_token")
+    session = MagicMock()
+    session.post = MagicMock(return_value=_mock_login_response(token=""))
+    coordinator = BIRDataUpdateCoordinator(
+        MagicMock(), session, "12345", "Address", token_storage=storage
+    )
+
+    await coordinator.async_initialize()
+    assert coordinator._token == "saved_token"
+    storage.async_get_token.assert_awaited_once_with("12345")
+
+    coordinator._token = None
+    with pytest.raises(UpdateFailed, match="Token not found"):
+        await coordinator._login()
+
+
+async def test_search_addresses_filters_entries_without_ids() -> None:
+    """Map BIR's search response to selectable address entries."""
+    response = AsyncMock()
+    response.raise_for_status = MagicMock()
+    response.json = AsyncMock(
+        return_value=[
+            {"Id": "12345", "Title": "Testveien 1", "SubTitle": "Bergen"},
+            {"Id": None, "Title": "Missing ID"},
+        ]
+    )
+    session = MagicMock()
+    session.get = MagicMock(
+        return_value=AsyncMock(
+            __aenter__=AsyncMock(return_value=response),
+            __aexit__=AsyncMock(return_value=False),
+        )
+    )
+
+    assert await async_search_addresses(session, "Testveien") == [
+        {"id": "12345", "adresse": "Testveien 1, Bergen"}
+    ]
+    assert session.get.call_args.kwargs["params"]["q"] == "Testveien"
+
+
+async def test_token_storage_load_save_and_clear() -> None:
+    """Persist newly issued tokens and remove them when they expire."""
+    store = MagicMock()
+    store.async_load = AsyncMock(return_value={"12345": "saved_token"})
+    store.async_save = AsyncMock()
+    with patch("custom_components.bir.coordinator.Store", return_value=store):
+        storage = BIRTokenStorage(MagicMock())
+
+    await storage.async_load()
+    assert await storage.async_get_token("12345") == "saved_token"
+    await storage.async_save_token("12345", "fresh_token")
+    assert await storage.async_get_token("12345") == "fresh_token"
+    await storage.async_clear_token("12345")
+    assert await storage.async_get_token("12345") is None
+    assert store.async_save.await_count == 2
+    assert store.async_save.await_args.args == ({},)
+
+
+async def test_retry_propagates_non_500_http_error() -> None:
+    """Report a retry failure other than 500 as a normal HTTP error."""
+    session = MagicMock()
+    session.post = MagicMock(return_value=_mock_login_response())
+    session.get = MagicMock(
+        side_effect=[_mock_get_response(401), _mock_get_response(403)]
+    )
+    coordinator = BIRDataUpdateCoordinator(MagicMock(), session, "12345", "Address")
+    coordinator._token = "expired_token"
+
+    with pytest.raises(UpdateFailed, match="Error communicating with BIR API"):
+        await coordinator._async_update_data()
+    assert session.get.call_count == 2
