@@ -1,6 +1,7 @@
 {
   "domain": "bir",
   "name": "BIR Waste Watch",
+  "categories": ["local_services"],
   "codeowners": ["@sanderblom"],
   "config_flow": true,
   "dependencies": [],
