@@ -6,7 +6,7 @@ import datetime as dt
 from datetime import datetime, timedelta
 import logging
 import re
-from typing import Any, TypedDict
+from typing import TypedDict
 from urllib.parse import unquote
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout
@@ -34,12 +34,24 @@ STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}.tokens"
 
 
+class PickupInfo(TypedDict):
+    """Next collection date for a waste type."""
+
+    date: str
+    date_raw: str
+    days_until: int
+    waste_type: str
+
+
+PickupData = dict[str, PickupInfo]
+
+
 class BIRTokenStorage:
     """Handle persistent token storage."""
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize token storage."""
-        self._store: Store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self._store: Store[dict[str, str]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._data: dict[str, str] = {}
 
     async def async_load(self) -> None:
@@ -62,7 +74,7 @@ class BIRTokenStorage:
         await self._store.async_save(self._data)
 
 
-class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class BIRDataUpdateCoordinator(DataUpdateCoordinator[PickupData]):
     """Class to manage fetching BIR data."""
 
     def __init__(
@@ -122,7 +134,7 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return True
 
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self) -> PickupData:
         """Fetch data from BIR API."""
         try:
             # Ensure we have a valid token
@@ -200,7 +212,7 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._token_storage:
             await self._token_storage.async_clear_token(self.property_id)
 
-    async def _fetch_pickup_dates(self) -> dict[str, Any]:
+    async def _fetch_pickup_dates(self) -> PickupData:
         """Fetch pickup dates from BIR API."""
         now = datetime.now()
         params = {
@@ -208,6 +220,7 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "datoFra": now.strftime("%Y-%m-%d"),
             "datoTil": (now + timedelta(days=PICKUP_LOOKUP_DAYS)).strftime("%Y-%m-%d"),
         }
+        assert self._token is not None
         headers = {"Token": self._token}
 
         _LOGGER.debug(
@@ -234,8 +247,8 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._process_pickup_data(pickup_data, reference_date=now.date())
 
     def _process_pickup_data(
-        self, pickup_data: list[dict], reference_date: dt.date | None = None
-    ) -> dict[str, Any]:
+        self, pickup_data: list[dict[str, str]], reference_date: dt.date | None = None
+    ) -> PickupData:
         """Process raw pickup data into structured format.
 
         Args:
@@ -250,7 +263,7 @@ class BIRDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         today = (
             reference_date if reference_date is not None else datetime.today().date()
         )
-        next_pickups: dict[str, Any] = {}
+        next_pickups: PickupData = {}
 
         for item in pickup_data:
             fraksjon = item.get("fraksjon")
@@ -313,7 +326,9 @@ async def async_search_addresses(
         List of matching properties with id and address.
 
     """
-    params = {"q": query, "s": "false"}
+    params = {"s": "false"}
+    if query is not None:
+        params["q"] = query
     timeout = ClientTimeout(total=API_TIMEOUT)
 
     async with session.get(

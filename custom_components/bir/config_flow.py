@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import AbortFlow, FlowResult
+from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -21,12 +22,24 @@ from homeassistant.helpers.selector import (
 import voluptuous as vol
 
 from .const import CONF_ADDRESS, CONF_PROPERTY_ID, DOMAIN
-from .coordinator import BIRDataUpdateCoordinator, async_search_addresses
+from .coordinator import (
+    AddressSearchResult,
+    BIRDataUpdateCoordinator,
+    async_search_addresses,
+)
+
+if TYPE_CHECKING:
+    from probatio import Schema
 
 _LOGGER = logging.getLogger(__name__)
 
 # Minimum characters before searching
 MIN_SEARCH_LENGTH = 3
+
+
+def _form_schema(fields: dict[Any, Any]) -> Schema:
+    """Use the HA runtime's Voluptuous alias with its Probatio schema type."""
+    return cast("Schema", vol.Schema(fields))
 
 
 class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -36,12 +49,12 @@ class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-        self._addresses: list[dict[str, Any]] = []
+        self._addresses: list[AddressSearchResult] = []
         self._search_query: str = ""
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step - address search."""
         errors: dict[str, str] = {}
 
@@ -70,7 +83,7 @@ class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
+            data_schema=_form_schema(
                 {
                     vol.Required("address_search", default=""): TextSelector(
                         TextSelectorConfig(
@@ -86,7 +99,7 @@ class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_select_address(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle address selection step."""
         errors: dict[str, str] = {}
 
@@ -150,7 +163,7 @@ class BIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="select_address",
-            data_schema=vol.Schema(
+            data_schema=_form_schema(
                 {
                     vol.Required("selected_address"): SelectSelector(
                         SelectSelectorConfig(
@@ -181,12 +194,12 @@ class BIROptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self) -> None:
         """Initialize options flow."""
-        self._addresses: list[dict[str, Any]] = []
+        self._addresses: list[AddressSearchResult] = []
         self._search_query: str = ""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle address search step - go directly to search."""
         errors: dict[str, str] = {}
         current_address = self.config_entry.data.get(CONF_ADDRESS, "")
@@ -215,9 +228,11 @@ class BIROptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
+            data_schema=_form_schema(
                 {
-                    vol.Required("address_search", default=current_address): TextSelector(
+                    vol.Required(
+                        "address_search", default=current_address
+                    ): TextSelector(
                         TextSelectorConfig(
                             type=TextSelectorType.TEXT,
                             autocomplete="street-address",
@@ -234,7 +249,7 @@ class BIROptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_select_address(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle address selection step."""
         errors: dict[str, str] = {}
 
@@ -292,7 +307,7 @@ class BIROptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="select_address",
-            data_schema=vol.Schema(
+            data_schema=_form_schema(
                 {
                     vol.Required("selected_address"): SelectSelector(
                         SelectSelectorConfig(
