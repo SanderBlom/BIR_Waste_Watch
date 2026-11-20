@@ -9,10 +9,6 @@ authors = [
     {name = "SanderBlom"}
 ]
 
-dependencies = [
-    "beautifulsoup4",
-]
-
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
