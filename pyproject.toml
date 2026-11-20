@@ -22,6 +22,7 @@ dev = [
     "freezegun>=1.2.0",
     "syrupy>=4.0.0",
     "ruff>=0.13.0",
+    "mypy>=2.4.1",
 ]
 
 [build-system]
@@ -56,6 +57,10 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
+
+[tool.mypy]
+strict = true
+files = ["custom_components/bir"]
 
 # Ruff configuration (based on Home Assistant Core)
 [tool.ruff]
