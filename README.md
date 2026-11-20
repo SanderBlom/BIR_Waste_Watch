@@ -17,6 +17,7 @@ This Home Assistant extension dynamically generates sensors for waste collection
 ## 📝 Prerequisites
 
 - Home Assistant instance up and running.
+- Home Assistant 2026.3 or newer (Python 3.14.2+).
 - Your garbage is picked up by BIR and your address is listed in BIR.no's database.
 
 ## 📦 Installation
@@ -26,7 +27,7 @@ On Home Assistant 2026.11 or newer, install BIR Waste Watch from the built-in Ma
 1. Go to **Settings → Marketplace** and search for **BIR Waste Watch**.
 2. Select **Install** and follow the [configuration guide](#configuration). New installs do not require a restart.
 
-On earlier Home Assistant versions, install **BIR Waste Watch** through HACS, restart Home Assistant, then add it under **Settings → Devices & services → Add integration**.
+On Home Assistant 2026.3–2026.10, install **BIR Waste Watch** through HACS, restart Home Assistant, then add it under **Settings → Devices & services → Add integration**.
 
 ## Configuration 
 

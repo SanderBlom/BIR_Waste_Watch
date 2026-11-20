@@ -1,7 +1,5 @@
 """Sensor platform for BIR Waste Watch integration."""
 
-from __future__ import annotations
-
 from datetime import date
 import logging
 from typing import Any

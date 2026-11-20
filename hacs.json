@@ -1,5 +1,6 @@
 {
     "name": "BIR Waste Watch",
     "render_readme": true,
-    "country": ["NO"]
+    "country": ["NO"],
+    "homeassistant": "2026.3.0"
 }
