@@ -1,7 +1,5 @@
 """Config flow for BIR Waste Watch integration."""
 
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
@@ -37,7 +35,8 @@ _LOGGER = logging.getLogger(__name__)
 MIN_SEARCH_LENGTH = 3
 
 
-def _form_schema(fields: dict[Any, Any]) -> Schema:
+# Probatio is not importable before HA 2026.9; keep its type-only name quoted.
+def _form_schema(fields: dict[Any, Any]) -> "Schema":  # noqa: UP037
     """Use the HA runtime's Voluptuous alias with its Probatio schema type."""
     return cast("Schema", vol.Schema(fields))
 

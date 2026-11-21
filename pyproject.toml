@@ -3,7 +3,7 @@ name = "bir-waste-watch"
 version = "2.2.3"
 description = "BIR Waste Watch - Home Assistant Custom Component"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14.2"
 license = {text = "MIT"}
 authors = [
     {name = "SanderBlom"}
@@ -60,13 +60,14 @@ exclude_lines = [
 
 [tool.mypy]
 strict = true
+python_version = "3.14"
 files = ["custom_components/bir"]
 
 # Ruff configuration (based on Home Assistant Core)
 [tool.ruff]
 required-version = ">=0.13.0"
 line-length = 88
-target-version = "py311"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
